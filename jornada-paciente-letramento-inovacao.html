@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jornada do Paciente: Letramento e Inovação</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eef3f6; --panel: #ffffff; --ink: #14232e; --muted: #5a6e7c; --line: #d6e0e7;
+  --accent: #0f766e; --accent-ink: #ffffff; --accent-soft: #d9f1ee;
+  --E: #e0692b; --L: #2f6fe0; --S: #7a4fd6; --Q: #0f9a74;
+  --q3: #0f9a74; --q2: #2f6fe0; --q1: #c98a0b; --q0: #d1433f;
+  --warn: #d1433f; --gold: #c98a0b;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b141b; --panel: #142129; --ink: #e6f0f5; --muted: #93a8b6; --line: #25363f;
+    --accent: #2cc4b4; --accent-ink: #06201d; --accent-soft: #123a37;
+    --E: #ff8a4d; --L: #6c9bff; --S: #a98bff; --Q: #35d3a4;
+    --q3: #35d3a4; --q2: #6c9bff; --q1: #f0b23a; --q0: #ff6b66; --warn: #ff6b66; --gold: #f0b23a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b141b; --panel: #142129; --ink: #e6f0f5; --muted: #93a8b6; --line: #25363f;
+  --accent: #2cc4b4; --accent-ink: #06201d; --accent-soft: #123a37;
+  --E: #ff8a4d; --L: #6c9bff; --S: #a98bff; --Q: #35d3a4;
+  --q3: #35d3a4; --q2: #6c9bff; --q1: #f0b23a; --q0: #ff6b66; --warn: #ff6b66; --gold: #f0b23a;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 14px 12px 48px; }
+.top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+h1 { font-size: 1.2rem; margin: 0; font-weight: 800; letter-spacing: -.01em; }
+.spacer { flex: 1; }
+button { font: inherit; font-size: .9rem; font-weight: 600; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 13px; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 800; }
+button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+
+.status { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+.st { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 7px 10px; }
+.st b { display: block; font-size: 1.1rem; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.st span { font-size: .7rem; color: var(--muted); }
+@media (max-width: 520px) { .status { grid-template-columns: repeat(2, 1fr); } }
+
+.inds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+@media (max-width: 520px) { .inds { grid-template-columns: repeat(2, 1fr); } }
+.ind { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; position: relative; }
+.ind .row { display: flex; justify-content: space-between; font-size: .76rem; color: var(--muted); font-weight: 600; }
+.ind .row b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.ind .bar { height: 8px; border-radius: 5px; background: color-mix(in srgb, var(--ink) 12%, transparent); margin-top: 5px; overflow: hidden; }
+.ind .bar i { display: block; height: 100%; width: 0; transition: width .4s; }
+.ind.low .row b { color: var(--warn); }
+.delta { position: absolute; right: 8px; top: -9px; font-size: .74rem; font-weight: 800; padding: 1px 7px; border-radius: 8px; background: var(--panel); border: 1px solid var(--line); opacity: 0; transition: opacity .2s; }
+.delta.show { opacity: 1; }
+.delta.up { color: var(--q3); } .delta.down { color: var(--q0); }
+
+.journey { display: flex; gap: 4px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 2px; }
+.stage { flex: 1; min-width: 74px; text-align: center; font-size: .7rem; font-weight: 700; color: var(--muted); padding: 6px 4px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); white-space: nowrap; }
+.stage.done { color: var(--q3); } .stage.now { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.stage em { font-style: normal; display: block; font-size: 1rem; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
+.tag { font-size: .7rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.tag.crise { background: color-mix(in srgb, var(--q0) 16%, transparent); color: var(--q0); }
+.tag.lab { background: color-mix(in srgb, var(--S) 16%, transparent); color: var(--S); }
+.card h2 { margin: 0 0 6px; font-size: 1.15rem; line-height: 1.3; }
+.persona { display: flex; gap: 10px; align-items: center; background: color-mix(in srgb, var(--accent) 7%, transparent); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; margin: 8px 0; }
+.persona .av { font-size: 2rem; line-height: 1; }
+.persona .nm { font-weight: 800; font-size: .92rem; }
+.persona .nt { font-size: .78rem; color: var(--muted); }
+.chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 3px; }
+.chip { font-size: .68rem; font-weight: 700; padding: 1px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); }
+.chip.Baixo { color: var(--q0); } .chip.Médio { color: var(--q1); } .chip.Alto { color: var(--q3); }
+.scn { margin: 8px 0 12px; font-size: .96rem; }
+
+.timer { height: 6px; border-radius: 4px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; margin: 4px 0 2px; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--accent); }
+.timer.hot i { background: var(--q0); }
+.tinfo { font-size: .72rem; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 8px; }
+
+.opts { display: grid; gap: 8px; }
+.opt { text-align: left; padding: 11px 12px; display: flex; gap: 10px; align-items: flex-start; font-weight: 600; line-height: 1.4; }
+.opt .k { flex: none; width: 22px; height: 22px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-size: .76rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.opt .tx { flex: 1; }
+.opt .cost { flex: none; font-size: .72rem; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt[aria-pressed="true"] .k { background: var(--accent); color: var(--accent-ink); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+.hintbox { margin-top: 10px; padding: 9px 11px; border-left: 4px solid var(--gold); background: color-mix(in srgb, var(--gold) 10%, transparent); border-radius: 8px; font-size: .86rem; display: none; }
+.hintbox.show { display: block; }
+.muted { color: var(--muted); font-size: .8rem; }
+
+.fb { margin-top: 4px; }
+.fbh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.fbh b { font-size: 1.05rem; }
+.fb.q3 .fbh b { color: var(--q3); } .fb.q2 .fbh b { color: var(--q2); } .fb.q1 .fbh b { color: var(--q1); } .fb.q0 .fbh b { color: var(--q0); }
+.pts { font-weight: 800; font-size: .9rem; }
+.fx { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.fxc { font-size: .76rem; font-weight: 800; padding: 2px 9px; border-radius: 8px; border: 1px solid var(--line); }
+.fxc.up { color: var(--q3); } .fxc.down { color: var(--q0); } .fxc.zero { color: var(--muted); }
+.fb p { margin: 6px 0; font-size: .9rem; }
+.fb .best { padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); font-size: .86rem; }
+.refs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 8px 0 12px; font-size: .78rem; color: var(--muted); }
+.refs button { padding: 2px 9px; font-size: .74rem; border-radius: 8px; }
+
+.overlay { position: fixed; inset: 0; background: rgba(4, 12, 16, .72); display: none; align-items: flex-start; justify-content: center; padding: 14px; z-index: 60; overflow-y: auto; }
+.overlay.show { display: flex; }
+.dialog { background: var(--panel); border-radius: 18px; padding: 20px; max-width: 640px; width: 100%; margin: auto; }
+.dialog h2 { margin: 0 0 6px; font-size: 1.3rem; } .dialog p { margin: 0 0 12px; color: var(--muted); font-size: .92rem; }
+.modes { display: grid; gap: 8px; margin: 12px 0; }
+.mode { text-align: left; padding: 10px 12px; }
+.mode b { display: block; } .mode small { color: var(--muted); font-weight: 500; }
+.note { font-size: .74rem; color: var(--muted); margin-top: 10px; }
+.refitem { padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .84rem; }
+.refitem:last-child { border-bottom: 0; }
+.refitem.hl { background: color-mix(in srgb, var(--gold) 14%, transparent); border-radius: 8px; padding: 9px 8px; }
+.refitem .n { font-weight: 800; color: var(--accent); margin-right: 4px; }
+.refitem a { color: var(--accent); word-break: break-all; }
+.refitem .what { color: var(--muted); display: block; margin-top: 2px; }
+
+.grade { text-align: center; margin-bottom: 12px; }
+.grade .big { font-size: 2.4rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.grade .ttl { font-size: 1.05rem; font-weight: 800; color: var(--accent); }
+.comp { display: grid; grid-template-columns: 150px 1fr 40px; gap: 8px; align-items: center; font-size: .82rem; margin: 5px 0; }
+.comp .bar { height: 9px; border-radius: 5px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
+.comp .bar i { display: block; height: 100%; background: var(--accent); }
+@media (max-width: 520px) { .comp { grid-template-columns: 110px 1fr 36px; font-size: .76rem; } }
+.rev { font-size: .82rem; display: grid; gap: 6px; margin: 8px 0 12px; }
+.rev div { padding: 7px 9px; border: 1px solid var(--line); border-radius: 10px; }
+.rev b { font-weight: 800; }
+.rev .e3 { border-left: 4px solid var(--q3); } .rev .e2 { border-left: 4px solid var(--q2); } .rev .e1 { border-left: 4px solid var(--q1); } .rev .e0 { border-left: 4px solid var(--q0); }
+.rev small { color: var(--muted); display: block; }
+h3 { font-size: .95rem; margin: 14px 0 4px; }
+.logo { height: 40px; width: auto; max-width: 140px; object-fit: contain; border-radius: 6px; }
+.credits { display: flex; gap: 12px; align-items: center; margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font-size: .8rem; }
+.credits img { height: 56px; width: auto; max-width: 150px; border-radius: 8px; object-fit: contain; flex: none; }
+.credits b { display: block; font-size: .9rem; }
+.credits small { color: var(--muted); display: block; }
+@media (prefers-reduced-motion: reduce) { .ind .bar i, .delta { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <img class="logo" id="logoTop" alt="Logo" hidden>
+    <h1>Jornada do Paciente: Letramento e Inovação</h1>
+    <div class="spacer"></div>
+    <button id="btnEv">Evidências</button>
+    <button id="btnMenu">Reiniciar</button>
+    <button id="btnTheme" aria-label="Alternar tema claro e escuro">Tema</button>
+  </div>
+
+  <div class="status">
+    <div class="st"><b id="sRound">0/12</b><span>Decisão</span></div>
+    <div class="st"><b id="sScore">0</b><span>Pontos</span></div>
+    <div class="st"><b id="sStreak">×1,0</b><span>Sequência de acertos</span></div>
+    <div class="st"><b id="sBudget">0</b><span>Orçamento de inovação</span></div>
+  </div>
+
+  <div class="inds" id="inds"></div>
+  <div class="journey" id="journey"></div>
+
+  <div class="card" id="card"></div>
+  <div id="footCredits"></div>
+</div>
+
+<div class="overlay show" id="ovMenu" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="dialog">
+    <div id="menuCredits"></div>
+    <h2 id="mTitle">Você lidera a Experiência do Paciente</h2>
+    <p>Ao longo de 12 decisões, conduza a jornada do paciente do agendamento ao pós-alta. Equilibre quatro indicadores com orçamento limitado, em cenários de letramento em saúde, letramento digital e inovação. Cada decisão se apoia em evidência publicada.</p>
+    <div class="modes" id="modes"></div>
+    <button class="primary" id="btnStart" style="width:100%;padding:13px">Iniciar jornada</button>
+    <p class="note">Simulação educativa. Os cenários são fictícios e os valores de cada decisão são didáticos. A evidência citada é, em grande parte, internacional e deve ser adaptada ao contexto local.</p>
+  </div>
+</div>
+
+<div class="overlay" id="ovEv" role="dialog" aria-modal="true" aria-labelledby="eTitle">
+  <div class="dialog">
+    <h2 id="eTitle">Evidências usadas no jogo</h2>
+    <p>Artigos recuperados do PubMed e normas oficiais. O que cada fonte mostra está resumido em uma linha.</p>
+    <div id="refList"></div>
+    <button class="primary" id="btnEvClose" style="margin-top:12px">Fechar</button>
+  </div>
+</div>
+
+<div class="overlay" id="ovEnd" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+  <div class="dialog" id="endBox"></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function shuffle(a) { var r = a.slice(); for (var i = r.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = r[i]; r[i] = r[j]; r[j] = t; } return r; }
+  function pick(a, n) { return shuffle(a).slice(0, n); }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  /* ---------- Referências ---------- */
+  var REFS = {
+    1: { c: "Jagodage H, McGuire A, Seib C, Bonner A. Effectiveness of teach-back for chronic kidney disease patient education: a systematic review. J Ren Care. 2023;50(2):92-103.", d: "10.1111/jorc.12462", n: "Teach-back é adequado a diferentes níveis de letramento. Há indícios de melhora em autogestão, autoeficácia e conhecimento (6 estudos, 520 participantes, resultados heterogêneos)." },
+    2: { c: "Choi S, Choi J. Effects of the teach-back method among cancer patients: a systematic review of the literature. Support Care Cancer. 2021;29(12):7259-7268.", d: "10.1007/s00520-021-06445-w", n: "Em pacientes com câncer (5 estudos), teach-back se associou a melhora de letramento em saúde, autoeficácia e sintomas. Não houve efeito em satisfação nem na administração de medicamentos." },
+    3: { c: "Boumendil K, Yakubu NA, Al Wachami N, et al. How nurses' interventions promote health literacy in patients with non-communicable diseases: a systematic review. J Clin Nurs. 2025;34(7):2493-2509.", d: "10.1111/jocn.17669", n: "25 estudos. Intervenções de enfermagem (teach-back, autogestão, aconselhamento) tiveram resultado positivo na maioria, mas precisam ser adaptadas ao paciente e exigem tempo da equipe e do paciente." },
+    4: { c: "Yoon E, Hur S, Opsasnick L, et al. Disparities in patient portal use among adults with chronic conditions. JAMA Netw Open. 2024;7(2):e240680.", d: "10.1001/jamanetworkopen.2024.0680", n: "Letramento em saúde adequado se associou a mais acessos ao portal (IRR 1,51). Menor uso entre pessoas com 70 anos ou mais e entre pacientes hispânicos e negros. Um instrumento breve de letramento pode servir de triagem para quem precisa de apoio digital." },
+    5: { c: "Grossman LV, Masterson Creber RM, Benda NC, et al. Interventions to increase patient portal use in vulnerable populations: a systematic review. J Am Med Inform Assoc. 2019;26(8-9):855-870.", d: "10.1093/jamia/ocz023", n: "18 estudos; 12 mostraram aumento de uso ou redução de disparidades. A evidência se concentra em intervenções centradas no indivíduo; mudanças em ferramenta, ambiente e organização foram pouco estudadas." },
+    6: { c: "Zaretsky J, Kim JM, Baskharoun S, et al. Generative artificial intelligence to transform inpatient discharge summaries to patient-friendly language and format. JAMA Netw Open. 2024;7(3):e240357.", d: "10.1001/jamanetworkopen.2024.0357", n: "50 sumários de alta: nível de leitura caiu de 11,0 para 6,2 (Flesch-Kincaid) e a compreensibilidade (PEMAT) subiu de 13% para 81%. Em 54% das avaliações médicas a acurácia foi máxima e 18 avaliações apontaram preocupações de segurança (omissões e algumas imprecisões). Implementação inicial exige revisão médica." },
+    7: { c: "Scaff SPS, Reis FJJ, Ferreira GE, Jacob MF, Saragiotto BT. Assessing the performance of AI chatbots in answering patients' common questions about low back pain. Ann Rheum Dis. 2025;84(1):143-149.", d: "10.1136/ard-2024-226202", n: "Em 1.069 recomendações de chatbots sobre lombalgia, 55,8% foram precisas e 42,1% imprecisas, com variação por tema. A leitura foi classificada como razoavelmente difícil." },
+    8: { c: "Bombard Y, Baker GR, Orlando E, et al. Engaging patients to improve quality of care: a systematic review. Implement Sci. 2018;13(1):98.", d: "10.1186/s13012-018-0784-z", n: "48 estudos. Engajamento de alto nível (co-design, parceria) se associou a mudanças em processos e estruturas; consulta unidirecional gerou sobretudo produtos pontuais. Parte dos pacientes percebeu o envolvimento como simbólico." },
+    9: { c: "Hepburn J, Williams L, McCann L. Barriers to and facilitators of digital health technology adoption among older adults with chronic diseases: updated systematic review. JMIR Aging. 2025;8:e80000.", d: "10.2196/80000", n: "Barreiras: letramento digital limitado, usabilidade, privacidade e desconfiança. Facilitadores: treinamento sob medida, design acessível, endosso de profissionais, modelos híbridos e co-design." },
+    10: { c: "Crable EL, Biancarelli DL, Aurora M, Drainoni ML, Walkey AJ. Interventions to increase appointment attendance in safety net health centers: a systematic review and meta-analysis. J Eval Clin Pract. 2020;27(4):965-975.", d: "10.1111/jep.13496", n: "Qualquer intervenção: RR 1,08 (IC95% 1,03-1,13). Mensagens de texto isoladas: RR 1,02 (0,96-1,08). Estratégias combinadas: RR 1,16 (1,03-1,32). Nenhuma estratégia isolada foi claramente superior. Contexto: centros de saúde que atendem populações vulneráveis nos EUA." },
+    11: { c: "Brasil. Lei nº 10.436/2002 (Libras) e Lei nº 13.146/2015 (Estatuto da Pessoa com Deficiência).", u: "https://www.planalto.gov.br/ccivil_03/leis/2002/l10436.htm", n: "Reconhecem a Libras como meio legal de comunicação e estabelecem direitos de acessibilidade e comunicação, inclusive em serviços de saúde." },
+    12: { c: "Brasil. Lei nº 13.709/2018 (LGPD), art. 48.", u: "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm", n: "Prevê comunicação à autoridade nacional e ao titular quando o incidente de segurança puder acarretar risco ou dano relevante." },
+    13: { c: "The Beryl Institute. Definição de experiência do paciente.", u: "https://www.theberylinstitute.org", n: "Soma de todas as interações, moldadas pela cultura da organização, que influenciam a percepção do paciente ao longo da jornada." }
+  };
+
+  /* ---------- Conteúdo ---------- */
+  var STAGES = [
+    { n: "Acesso", e: "📅" }, { n: "Chegada", e: "🚪" }, { n: "Consulta", e: "🩺" },
+    { n: "Exames", e: "🧪" }, { n: "Alta", e: "🏠" }, { n: "Pós-alta", e: "📲" }
+  ];
+  var IND = [["E", "Experiência", "--E"], ["L", "Letramento", "--L"], ["S", "Segurança", "--S"], ["Q", "Equidade e acesso", "--Q"]];
+  var COMPS = { lit_saude: "Letramento em saúde", lit_digital: "Letramento digital", inovacao: "Inovação e co-design", seguranca: "Segurança e ética", equidade: "Equidade e acesso" };
+  var TIPS = {
+    lit_saude: "Reforce teach-back, linguagem simples e verificação de entendimento em todos os pontos de contato (fontes 1 e 3).",
+    lit_digital: "Prefira modelos híbridos: canal humano mais capacitação sob medida, sem supor autonomia digital (fontes 4 e 9).",
+    inovacao: "Teste com usuários reais, co-desenhe e combine estratégias em vez de apostar em soluções isoladas (fontes 8 e 10).",
+    seguranca: "Use IA com revisão clínica, escopo restrito e governança; trate incidentes com transparência (fontes 6, 7 e 12).",
+    equidade: "Meça por perfil e mantenha alternativas de acesso para que a inovação não amplie desigualdades (fontes 4, 5 e 11)."
+  };
+
+  function O(t, cost, fx, q, fb, refs) { return { t: t, cost: cost, fx: fx, q: q, fb: fb, refs: refs || [] }; }
+
+  var CASES = [
+    /* Acesso */
+    { id: "A1", stage: 0, type: "caso", title: "O aplicativo de agendamento e o Sr. Raimundo",
+      persona: { n: "Sr. Raimundo", e: "👴", age: 72, hl: "Médio", dl: "Baixo", note: "Mora sozinho; internet instável" },
+      text: "O hospital lançou um aplicativo de agendamento. O Sr. Raimundo precisa marcar um retorno e não tem smartphone com internet estável.",
+      comp: ["lit_digital", "equidade"], hint: "Pense em modelo híbrido: o canal humano continua enquanto a capacidade digital é construída.",
+      opts: [
+        O("Enviar o link do aplicativo por e-mail e encerrar o atendimento.", 3, { E: -6, L: -4, S: -2, Q: -10 }, 0, "Transfere a barreira para o paciente. O uso de portais cai com idade avançada e menor letramento em saúde.", [4, 9]),
+        O("Agendar por telefone ou WhatsApp com atendente e oferecer treino no aplicativo, com acompanhante, na próxima visita.", 15, { E: 8, L: 7, S: 2, Q: 10 }, 3, "Modelo híbrido: garante o acesso hoje e constrói capacidade digital com apoio. Treinamento sob medida e endosso da equipe facilitam a adoção.", [9, 5]),
+        O("Manter só balcão e telefone; o aplicativo fica para quem consegue usar.", 8, { E: 3, L: -1, S: 0, Q: 3 }, 1, "Resolve o caso, mas não desenvolve autonomia e cria dois níveis de serviço.", [9]),
+        O("Tornar o aplicativo obrigatório e enviar um vídeo-tutorial de 20 minutos.", 12, { E: -4, L: 2, S: -1, Q: -8 }, 1, "Capacita quem já tem alguma capacidade digital e exclui quem mais precisa de apoio.", [4, 9])
+      ] },
+    { id: "A2", stage: 0, type: "caso", title: "Faltas elevadas no ambulatório de oncologia",
+      persona: null, ctx: "Desafio institucional",
+      text: "A diretoria pede uma solução rápida para o alto número de faltas nas consultas ambulatoriais. Os pacientes têm perfis e barreiras muito diferentes (transporte, dúvidas, medo).",
+      comp: ["equidade", "inovacao"], hint: "Nenhuma intervenção isolada se destacou na revisão. Pense em combinar estratégias.",
+      opts: [
+        O("Lembrete automático por SMS ou WhatsApp para todos.", 8, { E: 2, L: 0, S: 0, Q: 1 }, 1, "Em metanálise, mensagens de texto isoladas tiveram efeito pequeno e incerto (RR 1,02; IC95% 0,96-1,08).", [10]),
+        O("Pacote combinado: lembrete, remarcação fácil e checagem de barreiras (transporte, dúvidas) com navegador de pacientes.", 25, { E: 8, L: 3, S: 3, Q: 10 }, 3, "Estratégias combinadas tiveram efeito agregado maior (RR 1,16; IC95% 1,03-1,32), ainda que nenhuma estratégia isolada tenha sido claramente superior.", [10]),
+        O("Cobrar taxa de quem faltar.", 0, { E: -12, L: 0, S: -2, Q: -12 }, 0, "Tende a penalizar quem tem barreiras de acesso e corrói a confiança. Não resolve a causa.", []),
+        O("Agendar mais pacientes do que vagas em todos os horários.", 3, { E: -8, L: 0, S: -6, Q: -3 }, 0, "Trata o sintoma, aumenta espera e pressão sobre a consulta.", [])
+      ] },
+    { id: "A3", stage: 0, type: "caso", title: "Primeira teleconsulta da Dona Zilda",
+      persona: { n: "Dona Zilda", e: "👵", age: 68, hl: "Baixo", dl: "Baixo", note: "Nunca fez videochamada; a filha trabalha fora" },
+      text: "A Dona Zilda marcou uma teleconsulta de retorno. Nunca usou videochamada e tem receio de errar.",
+      comp: ["lit_digital", "equidade"], hint: "Ensaiar antes e ter um plano B reduz a ansiedade e a falha técnica.",
+      opts: [
+        O("Enviar o link cinco minutos antes e confiar que ela consiga entrar.", 0, { E: -8, L: -3, S: -3, Q: -8 }, 0, "Supõe capacidade digital que a paciente não tem. É o cenário típico de teleconsulta que não acontece.", [9]),
+        O("Ligar no dia anterior, testar câmera e áudio, entregar roteiro de 3 passos em letra grande e combinar plano B por telefone.", 10, { E: 8, L: 7, S: 3, Q: 9 }, 3, "Treinamento sob medida, design simples e modelo híbrido aparecem como facilitadores de adoção entre idosos.", [9]),
+        O("Cancelar a teleconsulta e exigir consulta presencial.", 4, { E: -4, L: 0, S: 1, Q: -5 }, 1, "Garante a consulta, mas transfere custo e deslocamento sem tentar apoiar o uso.", [9]),
+        O("Enviar um manual de 12 páginas em PDF.", 3, { E: -2, L: -1, S: 0, Q: -4 }, 1, "Material longo e digital para quem tem baixa capacidade digital tem pouco efeito prático.", [9])
+      ] },
+    /* Chegada */
+    { id: "B1", stage: 1, type: "caso", title: "O totem de check-in e as filas",
+      persona: null, ctx: "Desafio institucional",
+      text: "O novo totem de autoatendimento reduziu a fila para alguns e gerou frustração em idosos e pessoas com baixa visão.",
+      comp: ["inovacao", "equidade"], hint: "A média da fila pode esconder quem está sendo prejudicado. Meça por perfil.",
+      opts: [
+        O("Retirar o totem.", 5, { E: -2, L: -2, S: 0, Q: 2 }, 1, "Elimina o problema, mas também a inovação. Sem aprendizado sobre o que falhou.", []),
+        O("Manter o totem com anfitriões nos horários de pico, balcão alternativo, fonte e contraste revisados e tempo medido por perfil.", 18, { E: 8, L: 5, S: 1, Q: 9 }, 3, "Acessibilidade, apoio humano e medição por perfil ampliam a adoção sem excluir.", [9]),
+        O("Aumentar a fonte do totem sem testar com usuários.", 5, { E: 2, L: 0, S: 0, Q: 1 }, 1, "Ajuste sem co-design pode não resolver a dor real. Teste com quem usa.", [8]),
+        O("Manter como está; quem não aprender usa a fila comum.", 0, { E: -6, L: -1, S: 0, Q: -8 }, 0, "Cria uma jornada pior justamente para quem tem mais barreiras.", [])
+      ] },
+    { id: "B2", stage: 1, type: "caso", title: "Paciente surdo chega sem intérprete agendado",
+      persona: { n: "Anderson", e: "🧏", age: 34, hl: "Médio", dl: "Alto", note: "Usuário de Libras" },
+      text: "Anderson chega para a consulta. Não há intérprete de Libras agendado e a equipe não domina a língua.",
+      comp: ["equidade", "seguranca"], hint: "Comunicação efetiva é pré-requisito de segurança e de direito.",
+      opts: [
+        O("Escrever frases curtas em papel.", 0, { E: -6, L: -4, S: -6, Q: -6 }, 1, "Pode complementar, mas para muitas pessoas surdas o português escrito é segunda língua. Risco de mal-entendido.", [11]),
+        O("Acionar intérprete de Libras (presencial ou por vídeo) e registrar a preferência para os próximos atendimentos.", 20, { E: 10, L: 8, S: 7, Q: 12 }, 3, "Garante comunicação efetiva e cria memória do cuidado. Libras é reconhecida e a acessibilidade é um direito legal.", [11]),
+        O("Pedir que um familiar interprete.", 0, { E: -3, L: -2, S: -8, Q: -3 }, 1, "Há risco de omissão, filtro e quebra de privacidade. Só como último recurso.", [11]),
+        O("Remarcar para quando houver intérprete.", 2, { E: -10, L: -2, S: -2, Q: -10 }, 0, "Transfere ao paciente o custo de uma falha da instituição.", [11])
+      ] },
+    /* Consulta */
+    { id: "C1", stage: 2, type: "caso", title: "Termo de consentimento de seis páginas",
+      persona: { n: "Sra. Marta", e: "👩", age: 55, hl: "Baixo", dl: "Médio", note: "Ensino fundamental incompleto" },
+      text: "A Sra. Marta vai fazer um procedimento. O termo de consentimento tem seis páginas com termos técnicos.",
+      comp: ["lit_saude", "seguranca"], hint: "Consentimento é compreensão, não apenas assinatura.",
+      opts: [
+        O("Pedir a assinatura e entregar uma cópia.", 0, { E: -4, L: -8, S: -10, Q: -4 }, 0, "Cumpre o papel, não garante entendimento. Alto risco de consentimento sem compreensão.", [3]),
+        O("Explicar em linguagem simples com apoio visual, usar teach-back, abrir tempo para perguntas e registrar.", 12, { E: 6, L: 12, S: 10, Q: 4 }, 3, "Teach-back é adequado a diferentes níveis de letramento e as intervenções de enfermagem para letramento tiveram resultados positivos, desde que adaptadas ao paciente.", [1, 3]),
+        O("Enviar um vídeo de 15 minutos por link antes do procedimento.", 15, { E: 2, L: 4, S: 2, Q: -2 }, 1, "Material útil, mas sem checar o entendimento não se sabe se funcionou, e exige acesso digital.", [3, 9]),
+        O("Pedir que o acompanhante leia e explique.", 0, { E: -5, L: -3, S: -6, Q: -2 }, 0, "Delega a comunicação clínica a quem não tem esse papel e não verifica a compreensão da paciente.", [])
+      ] },
+    { id: "C2", stage: 2, type: "caso", title: "O “sim” automático",
+      persona: { n: "Sr. Paulo", e: "👨", age: 61, hl: "Médio", dl: "Médio", note: "Acena que entendeu" },
+      text: "Após explicar o diagnóstico e uma nova medicação, o profissional pergunta se ficou claro. O Sr. Paulo acena que sim, mas parece inseguro.",
+      comp: ["lit_saude", "seguranca"], hint: "Quem tem a responsabilidade de explicar bem é quem explica.",
+      opts: [
+        O("Perguntar de novo: “Ficou alguma dúvida?”", 0, { E: 1, L: -2, S: -4, Q: 0 }, 1, "Pergunta fechada tende a gerar “sim” automático e não verifica o entendimento.", []),
+        O("Teach-back: “Para eu ter certeza de que expliquei bem, como o senhor vai tomar esse remédio em casa?” e reexplicar se preciso.", 3, { E: 5, L: 12, S: 8, Q: 3 }, 3, "Teach-back melhorou conhecimento e autoeficácia em revisões. Atenção: em câncer não houve efeito sobre satisfação, então não é “mágica” para experiência.", [1, 2, 3]),
+        O("Entregar o panfleto padrão.", 4, { E: 0, L: 3, S: 1, Q: 0 }, 1, "Complementa, mas não substitui a verificação do entendimento.", [3]),
+        O("Indicar o aplicativo do hospital para rever as orientações.", 2, { E: 0, L: 2, S: -2, Q: -3 }, 1, "Pressupõe acesso e letramento digital que ainda não foram verificados.", [4, 9])
+      ] },
+    /* Exames */
+    { id: "D1", stage: 3, type: "caso", title: "Preparo de colonoscopia com baixa adesão",
+      persona: null, ctx: "Desafio institucional",
+      text: "Muitos pacientes chegam ao exame com o preparo inadequado. As instruções atuais são longas e técnicas.",
+      comp: ["lit_saude", "seguranca"], hint: "Instrução complexa vira adesão baixa. Simplifique e confirme.",
+      opts: [
+        O("Passo a passo por dia em linguagem simples, com pictogramas, lembretes, confirmação por teach-back por telefone e canal para dúvidas.", 22, { E: 8, L: 10, S: 10, Q: 5 }, 3, "Combina linguagem simples, verificação do entendimento e canal de apoio, estratégias associadas a melhor letramento e autogestão.", [1, 3]),
+        O("Enviar o PDF técnico do protocolo por e-mail.", 2, { E: -2, L: -2, S: -6, Q: -4 }, 0, "Mantém a barreira de linguagem e depende de acesso digital.", [9]),
+        O("Ligar apenas na véspera para confirmar o exame.", 8, { E: 1, L: 1, S: 2, Q: 0 }, 1, "Lembra o exame, mas chega tarde para corrigir dúvidas sobre o preparo.", []),
+        O("Criar três etapas digitais obrigatórias antes do exame.", 12, { E: -3, L: 1, S: 0, Q: -4 }, 1, "Aumenta a carga sobre quem já tem dificuldade e adiciona barreira digital.", [9])
+      ] },
+    { id: "D2", stage: 3, type: "caso", title: "Resultado liberado à noite, sem contexto",
+      persona: { n: "Sra. Helena", e: "👩‍🦱", age: 47, hl: "Alto", dl: "Alto", note: "Ansiosa; resultado liberado no portal às 22h" },
+      text: "Um resultado sensível foi liberado automaticamente no portal. A Sra. Helena leu sozinha, não entendeu os termos e começou a buscar explicações na internet e em chatbots.",
+      comp: ["lit_digital", "seguranca"], hint: "Acesso rápido é um direito. O desafio é acompanhar.",
+      opts: [
+        O("Manter a liberação imediata e deixar que cada paciente interprete sozinho.", 0, { E: -8, L: -4, S: -6, Q: -2 }, 0, "Buscas e chatbots podem trazer informação imprecisa. Em um estudo, 42,1% das recomendações de chatbots foram imprecisas.", [7]),
+        O("Manter o acesso imediato, incluir explicação em linguagem simples e um canal ativo com enfermeiro ou médico para resultados sensíveis, combinando antes “como e quando”.", 15, { E: 8, L: 8, S: 6, Q: 3 }, 3, "Preserva autonomia e acrescenta apoio humano. Textos simplificados ganham clareza, mas precisam de revisão clínica.", [6]),
+        O("Bloquear todos os resultados por sete dias.", 0, { E: -10, L: 0, S: 2, Q: -6 }, 0, "Retira autonomia e confiança e não resolve a falta de apoio.", []),
+        O("Gerar a explicação por IA e publicar automaticamente.", 8, { E: 2, L: 4, S: -10, Q: 0 }, 0, "Em estudo com sumários de alta, houve omissões e afirmações imprecisas; a revisão médica foi necessária.", [6, 7])
+      ] },
+    /* Alta */
+    { id: "E1", stage: 4, type: "caso", title: "Sumário de alta técnico e IA generativa",
+      persona: { n: "Sr. Antônio", e: "🧓", age: 70, hl: "Médio", dl: "Baixo", note: "Alta após internação por insuficiência cardíaca" },
+      text: "O sumário de alta está cheio de siglas. A equipe propõe usar IA generativa para torná-lo claro para o paciente.",
+      comp: ["inovacao", "seguranca"], hint: "A IA melhora a leitura, mas o conteúdo precisa de um humano responsável.",
+      opts: [
+        O("Publicar automaticamente o texto da IA no portal.", 10, { E: 3, L: 5, S: -12, Q: -2 }, 0, "Houve omissões e imprecisões em parte dos textos gerados; o estudo concluiu que o início exige revisão médica.", [6]),
+        O("Usar a IA como rascunho, com revisão clínica obrigatória, teach-back do plano de alta e canal de dúvidas.", 18, { E: 8, L: 12, S: 8, Q: 4 }, 3, "Nível de leitura caiu de 11,0 para 6,2 e a compreensibilidade subiu de 13% para 81% (PEMAT), com revisão por médicos.", [6, 1]),
+        O("Manter o sumário original.", 0, { E: -3, L: -6, S: -4, Q: -2 }, 1, "Evita risco de IA, mas deixa o paciente com um texto de difícil leitura.", [6]),
+        O("Entregar apenas uma orientação verbal rápida.", 0, { E: -2, L: -4, S: -6, Q: -2 }, 0, "Sem material de apoio nem verificação, a retenção da informação é baixa.", [3])
+      ] },
+    { id: "E2", stage: 4, type: "caso", title: "A cuidadora e nove medicamentos",
+      persona: { n: "Dona Rita", e: "👩", age: 58, hl: "Médio", dl: "Baixo", note: "Cuida da mãe de 84 anos com 9 medicamentos" },
+      text: "A mãe da Dona Rita recebe alta com nove medicamentos e vários horários. A cuidadora está insegura.",
+      comp: ["lit_saude", "seguranca"], hint: "Foque no cuidador como paciente da comunicação.",
+      opts: [
+        O("Quadro ilustrado de horários, teach-back com a cuidadora e contato direto para dúvidas na primeira semana.", 14, { E: 8, L: 10, S: 10, Q: 5 }, 3, "Combina material visual, verificação do entendimento e canal de apoio. As intervenções devem ser adaptadas ao paciente e ao cuidador.", [1, 3]),
+        O("Lista impressa com nomes técnicos dos medicamentos.", 2, { E: -1, L: -2, S: -6, Q: 0 }, 0, "Mantém a barreira de linguagem e aumenta o risco de erro de administração.", [3]),
+        O("Indicar um aplicativo de gestão de medicamentos como obrigatório.", 20, { E: -2, L: 2, S: 1, Q: -8 }, 1, "Pode ajudar quem tem letramento digital, mas aqui é uma barreira adicional.", [9]),
+        O("Receita com instrução resumida: “uso contínuo”.", 0, { E: -2, L: -4, S: -8, Q: -1 }, 0, "Instrução vaga é causa conhecida de uso incorreto.", [])
+      ] },
+    /* Pós-alta */
+    { id: "F1", stage: 5, type: "caso", title: "Telemonitoramento para idosos com doenças crônicas",
+      persona: null, ctx: "Desafio institucional",
+      text: "O hospital quer lançar telemonitoramento de pressão arterial e glicemia para pacientes idosos com doenças crônicas.",
+      comp: ["inovacao", "equidade"], hint: "Co-design de alto nível muda processos. Consulta rápida gera só produtos.",
+      opts: [
+        O("Entregar os dispositivos sem treinamento e acompanhar pelos dados.", 20, { E: -4, L: -2, S: -4, Q: -6 }, 0, "Ignora as barreiras de letramento digital, usabilidade e desconfiança já descritas em idosos.", [9]),
+        O("Piloto co-desenhado com pacientes e cuidadores: treinamento sob medida, interface acessível, apoio humano e uso medido por perfil.", 28, { E: 8, L: 8, S: 5, Q: 10 }, 3, "Co-design e engajamento de alto nível se associam a mudanças de processo; treino sob medida e design acessível facilitam a adoção.", [8, 9]),
+        O("Exigir smartphone próprio para participar.", 5, { E: -3, L: 0, S: 0, Q: -12 }, 0, "Exclui quem tem menos recursos e mais necessidade.", [4, 9]),
+        O("Adiar até que a população esteja “pronta”.", 0, { E: -2, L: 0, S: 0, Q: -4 }, 1, "Evita risco, mas não constrói capacidade; letramento digital se desenvolve com apoio.", [9])
+      ] },
+    { id: "F2", stage: 5, type: "caso", title: "Chatbot de WhatsApp para dúvidas pós-alta",
+      persona: null, ctx: "Desafio institucional",
+      text: "A área de inovação quer lançar um chatbot de WhatsApp para responder dúvidas de pacientes após a alta, aproveitando o impulso do projeto.",
+      comp: ["inovacao", "seguranca"], hint: "Em saúde, o escopo do chatbot é uma decisão de segurança.",
+      opts: [
+        O("Lançar para todos sem validação clínica.", 8, { E: 3, L: -2, S: -14, Q: 1 }, 0, "Em estudo com chatbots, 42,1% das recomendações foram imprecisas, com variação por tema.", [7]),
+        O("Escopo restrito, respostas validadas pela equipe clínica, escalonamento para humano, avisos claros e auditoria contínua.", 22, { E: 7, L: 6, S: 9, Q: 5 }, 3, "Reduz o risco de imprecisão e mantém o humano no circuito, o mesmo princípio de revisão clínica observado na simplificação de textos por IA.", [7, 6]),
+        O("Cancelar o projeto de IA.", 0, { E: -3, L: 0, S: 1, Q: -2 }, 1, "Evita risco, mas abre mão de aprender com um piloto controlado.", []),
+        O("Permitir que o chatbot oriente doses de medicamentos.", 6, { E: 1, L: 0, S: -16, Q: 0 }, 0, "Orientação de dose sem supervisão é o uso de maior risco.", [7])
+      ] },
+    { id: "F3", stage: 5, type: "caso", title: "Pesquisa de satisfação respondida só por quem usa portal",
+      persona: null, ctx: "Desafio institucional",
+      text: "A pesquisa digital de satisfação tem boa taxa de resposta, mas quase todos os respondentes usam o portal. Idosos e pacientes com baixo letramento quase não aparecem.",
+      comp: ["inovacao", "equidade"], hint: "Quem não aparece na pesquisa também precisa ser ouvido.",
+      opts: [
+        O("Manter a pesquisa digital; a taxa de resposta já é boa.", 0, { E: -2, L: 0, S: 0, Q: -8 }, 0, "Viés de seleção: o indicador escondido da desigualdade parece bom.", [4]),
+        O("Ampliar a escuta: QR code, telefone, entrevistas curtas presenciais, conselho consultivo de pacientes e análise por perfil de letramento.", 20, { E: 8, L: 4, S: 3, Q: 10 }, 3, "Engajamento de alto nível muda processos e a medição por perfil de letramento revela desigualdades de uso.", [8, 4]),
+        O("Trocar por outra escala digital.", 6, { E: 1, L: 0, S: 0, Q: -3 }, 1, "Muda o instrumento, mantém o viés.", [4]),
+        O("Fazer um grande evento de feedback uma vez por ano.", 12, { E: 3, L: 1, S: 0, Q: 2 }, 1, "Consulta pontual tende a gerar produtos isolados, não mudança estrutural.", [8])
+      ] },
+    /* Laboratórios */
+    { id: "LAB1", stage: 3, type: "lab", title: "Laboratório de inovação: reduzir barreiras de letramento",
+      persona: null, ctx: "Escolha até 3 iniciativas",
+      text: "Você tem verba para financiar até três iniciativas nesta rodada. Escolha as que mais reduzem barreiras de letramento ao longo da jornada.",
+      comp: ["lit_saude", "inovacao"], hint: "Procure iniciativas com apoio humano, co-design e verificação de entendimento.",
+      multi: 3,
+      opts: [
+        O("Treinamento de teach-back para a equipe", 15, { E: 4, L: 10, S: 6, Q: 3 }, 3, "Teach-back é adequado a diferentes níveis de letramento.", [1, 3]),
+        O("Revisão de materiais em linguagem simples, com pacientes", 20, { E: 6, L: 10, S: 3, Q: 6 }, 3, "Co-design de alto nível se associa a mudanças reais de processo.", [8]),
+        O("Navegador de pacientes para casos de maior vulnerabilidade", 25, { E: 7, L: 5, S: 3, Q: 10 }, 2, "Isolado, o efeito foi incerto em revisão de comparecimento (RR 1,09; IC95% 0,96-1,24). Funciona melhor combinado.", [10]),
+        O("Novo aplicativo de jornada completa, lançado em todas as unidades", 45, { E: 2, L: 1, S: -1, Q: -6 }, 0, "Alto custo e risco de excluir quem tem menos letramento digital, sem teste prévio.", [4, 9]),
+        O("Painel de indicadores de letramento por perfil de paciente", 12, { E: 1, L: 3, S: 1, Q: 5 }, 2, "Um instrumento breve de letramento pode servir para identificar quem precisa de apoio.", [4]),
+        O("Um totem a mais na recepção", 18, { E: -1, L: -1, S: 0, Q: -3 }, 0, "Mais tecnologia sem resolver a barreira de entendimento.", [9])
+      ] },
+    { id: "LAB2", stage: 5, type: "lab", title: "Laboratório de inovação: IA com governança",
+      persona: null, ctx: "Escolha até 3 iniciativas",
+      text: "A instituição vai ampliar o uso de IA na comunicação com pacientes. Escolha até três iniciativas que equilibram benefício e segurança.",
+      comp: ["inovacao", "seguranca"], hint: "O benefício da IA em saúde vem junto com revisão, governança e métricas de equidade.",
+      multi: 3,
+      opts: [
+        O("IA para reescrever materiais, com revisão clínica", 15, { E: 4, L: 9, S: 3, Q: 3 }, 3, "Texto mais legível e compreensível, com revisão médica no início.", [6]),
+        O("Chatbot sem curadoria, ligado ao prontuário", 10, { E: 2, L: 0, S: -14, Q: 0 }, 0, "Risco alto de imprecisão e de exposição de dados.", [7, 12]),
+        O("Comitê de governança de IA (privacidade, vieses, auditoria)", 12, { E: 1, L: 0, S: 9, Q: 4 }, 3, "Estrutura para responder a incidentes e cumprir a LGPD.", [12]),
+        O("Piloto controlado com métricas de segurança e equidade", 15, { E: 3, L: 2, S: 5, Q: 6 }, 3, "Permite aprender antes de escalar e medir quem ficou de fora.", [4, 8]),
+        O("Tradução automática em consultas de alto risco, sem revisão", 8, { E: 0, L: -3, S: -10, Q: -2 }, 0, "Erros de tradução em momentos críticos têm alto custo e a revisão humana é essencial.", [6]),
+        O("Capacitação da equipe em letramento em IA", 10, { E: 1, L: 3, S: 5, Q: 0 }, 2, "Ajuda a equipe a identificar e corrigir imprecisões, mas não substitui a governança.", [7])
+      ] }
+  ];
+
+  var CRISES = [
+    { id: "X1", type: "crise", title: "Queda do portal e do agendamento em dia de pico",
+      text: "O sistema de agendamento e o portal caíram na manhã de maior movimento. A fila já está se formando.",
+      comp: ["equidade"], hint: "Contingência é desenhada antes da crise. Priorize quem é mais vulnerável.",
+      opts: [
+        O("Ativar o plano de contingência: fila manual, comunicação ativa por telefone ou WhatsApp e prioridade aos mais vulneráveis.", 10, { E: 4, L: 0, S: 4, Q: 5 }, 3, "Um plano B humano protege quem mais depende do atendimento.", [13]),
+        O("Publicar um aviso no site e aguardar.", 0, { E: -6, L: 0, S: -1, Q: -6 }, 1, "Quem não usa site fica sem informação.", [9]),
+        O("Cancelar os atendimentos eletivos sem aviso.", 0, { E: -14, L: 0, S: -2, Q: -8 }, 0, "Quebra de confiança e custo ao paciente.", []),
+        O("Pedir aos pacientes que voltem outro dia.", 0, { E: -8, L: 0, S: -1, Q: -8 }, 0, "Transfere o custo da falha para o paciente.", [])
+      ] },
+    { id: "X2", type: "crise", title: "Mensagens do chatbot enviadas ao número errado",
+      text: "Um erro de integração enviou mensagens com dados pessoais de pacientes a números de telefone errados.",
+      comp: ["seguranca"], hint: "Incidente com dados pessoais exige resposta formal e transparente.",
+      opts: [
+        O("Acionar o plano de incidentes e o encarregado de dados, conter, avaliar o risco, comunicar os afetados e corrigir a causa.", 12, { E: 2, L: 0, S: 10, Q: 0 }, 3, "A LGPD (art. 48) prevê comunicação à autoridade e ao titular quando houver risco ou dano relevante.", [12]),
+        O("Corrigir em silêncio para evitar alarme.", 0, { E: -6, L: 0, S: -10, Q: 0 }, 0, "Descumpre o dever de transparência e amplia o risco.", [12]),
+        O("Desligar o chatbot de vez.", 0, { E: -4, L: 0, S: 2, Q: -1 }, 1, "Reduz o risco, mas não trata o incidente nem a causa.", [12]),
+        O("Esperar para ver se alguém reclama.", 0, { E: -2, L: 0, S: -12, Q: 0 }, 0, "Incidente conhecido e não tratado é o pior cenário.", [12])
+      ] },
+    { id: "X3", type: "crise", title: "Reclamação viral de um paciente idoso",
+      text: "Um paciente idoso publicou que não conseguiu usar o aplicativo e foi mal atendido. A publicação circula nas redes.",
+      comp: ["inovacao", "equidade"], hint: "A reclamação é uma fonte de aprendizado, não só de reputação.",
+      opts: [
+        O("Contato empático e rápido, resolver o caso, convidar o paciente para o grupo de co-design e corrigir o processo.", 8, { E: 8, L: 3, S: 0, Q: 6 }, 3, "Transforma a reclamação em engajamento, mais associado a mudança de processos.", [8]),
+        O("Responder publicamente defendendo o hospital.", 0, { E: -8, L: 0, S: 0, Q: -4 }, 0, "Defensiva em público aprofunda a perda de confiança.", []),
+        O("Pedir que o paciente apague a publicação.", 0, { E: -12, L: 0, S: -2, Q: -2 }, 0, "Pressão sobre o paciente piora a crise.", []),
+        O("Enviar uma resposta padrão automática.", 0, { E: -2, L: 0, S: 0, Q: 0 }, 1, "Responde, mas não resolve nem aprende.", [])
+      ] },
+    { id: "X4", type: "crise", title: "Quase-evento: chatbot sugeriu ajuste de dose",
+      text: "Um paciente relatou que o chatbot sugeriu ajustar a dose de um medicamento por conta própria. Ele não seguiu a orientação.",
+      comp: ["seguranca"], hint: "Quase-evento é oportunidade de aprendizado para evitar um evento adverso.",
+      opts: [
+        O("Notificar o quase-evento, suspender a função, contatar o paciente, revisar com a equipe clínica e só reativar com salvaguardas.", 12, { E: 2, L: 0, S: 12, Q: 0 }, 3, "Chatbots tiveram proporção relevante de recomendações imprecisas; supervisão e escopo restrito são essenciais.", [7]),
+        O("Ajustar o texto do chatbot e seguir.", 2, { E: 0, L: 0, S: -4, Q: 0 }, 1, "Correção superficial sem investigação da causa.", [7]),
+        O("Não registrar, pois não houve dano.", 0, { E: 0, L: 0, S: -12, Q: 0 }, 0, "Perde-se o aprendizado e a chance de prevenir um evento.", []),
+        O("Orientar o paciente a ignorar o chatbot.", 0, { E: -4, L: 0, S: -6, Q: 0 }, 0, "Não corrige o risco para os outros pacientes.", [])
+      ] }
+  ];
+
+  var MODES = [
+    { k: "padrao", n: "Missão padrão", d: "30 s por decisão. Orçamento 100, mais 8 a cada rodada.", cfg: { budget: 100, income: 8, time: 30, ctime: 15, pressure: 0, start: 55, hints: 3, hintCost: 5 } },
+    { k: "desafio", n: "Desafio", d: "20 s por decisão. Orçamento 70, mais 6 por rodada, indicadores partem de 45 e caem 2 pontos por rodada.", cfg: { budget: 70, income: 6, time: 20, ctime: 12, pressure: 2, start: 45, hints: 2, hintCost: 5 } },
+    { k: "estudo", n: "Modo estudo", d: "Sem cronômetro e com dicas ilimitadas. Ideal para aula e discussão.", cfg: { budget: 100, income: 8, time: 0, ctime: 0, pressure: 0, start: 55, hints: 99, hintCost: 0 } }
+  ];
+
+  /* ---------- Estado ---------- */
+  var G = null, modeSel = "padrao", timerId = null;
+
+  function buildQueue() {
+    var cs = function (s) { return CASES.filter(function (c) { return c.stage === s && c.type === "caso"; }); };
+    var lab = function (id) { return CASES.filter(function (c) { return c.id === id; })[0]; };
+    var q = [].concat(pick(cs(0), 2), pick(cs(1), 1), cs(2), pick(cs(3), 1), [lab("LAB1")], pick(cs(4), 1), pick(cs(5), 1), [lab("LAB2")]);
+    var cr = pick(CRISES, 2);
+    var p1 = 3 + Math.floor(Math.random() * 4), p2 = 8 + Math.floor(Math.random() * 3);
+    var out = q.slice();
+    [[p2, cr[1]], [p1, cr[0]]].forEach(function (x) {
+      var prev = out[Math.min(x[0], out.length) - 1];
+      var item = Object.assign({}, x[1], { stage: prev ? prev.stage : 0 });
+      out.splice(Math.min(x[0], out.length), 0, item);
+    });
+    return out;
+  }
+
+  function startGame() {
+    var m = MODES.filter(function (x) { return x.k === modeSel; })[0], cfg = m.cfg;
+    var comp = {}; Object.keys(COMPS).forEach(function (k) { comp[k] = { got: 0, max: 0 }; });
+    G = { mode: m, cfg: cfg, queue: buildQueue(), i: -1, ind: { E: cfg.start, L: cfg.start, S: cfg.start, Q: cfg.start },
+      budget: cfg.budget, score: 0, streak: 0, hints: cfg.hints, review: [], comp: comp, over: false, cur: null, answered: false, sel: [], order: [], t0: 0, dur: 0 };
+    $("ovMenu").classList.remove("show"); $("ovEnd").classList.remove("show");
+    buildInds(); nextRound(true);
+  }
+
+  /* ---------- Interface fixa ---------- */
+  function buildInds() {
+    var box = $("inds"); box.innerHTML = "";
+    IND.forEach(function (x) {
+      var d = document.createElement("div"); d.className = "ind"; d.id = "ind" + x[0];
+      d.innerHTML = '<span class="delta" id="dl' + x[0] + '"></span><div class="row"><span>' + x[1] + '</span><b id="iv' + x[0] + '">0</b></div><div class="bar"><i id="ib' + x[0] + '" style="background:var(' + x[2] + ')"></i></div>';
+      box.appendChild(d);
+    });
+  }
+  function renderStatus(deltas) {
+    $("sRound").textContent = Math.max(0, G.i + 1) + "/" + G.queue.length;
+    $("sScore").textContent = G.score;
+    var mult = 1 + Math.min(G.streak, 5) * .1;
+    $("sStreak").textContent = "×" + mult.toFixed(1).replace(".", ",");
+    $("sBudget").textContent = G.budget;
+    IND.forEach(function (x) {
+      var k = x[0], v = G.ind[k];
+      $("iv" + k).textContent = Math.round(v); $("ib" + k).style.width = v + "%";
+      $("ind" + k).classList.toggle("low", v <= 25);
+      var dl = $("dl" + k);
+      if (deltas && deltas[k]) {
+        dl.textContent = (deltas[k] > 0 ? "+" : "") + deltas[k]; dl.className = "delta show " + (deltas[k] > 0 ? "up" : "down");
+        setTimeout(function () { dl.classList.remove("show"); }, 2200);
+      }
+    });
+    var j = $("journey"); j.innerHTML = "";
+    var cs = G.cur ? G.cur.stage : 0;
+    STAGES.forEach(function (s, idx) {
+      var d = document.createElement("div"); d.className = "stage" + (idx < cs ? " done" : idx === cs ? " now" : "");
+      d.innerHTML = "<em>" + s.e + "</em>" + s.n; j.appendChild(d);
+    });
+  }
+
+  /* ---------- Rodadas ---------- */
+  function nextRound(first) {
+    if (!first && G.cfg.pressure) { IND.forEach(function (x) { G.ind[x[0]] = clamp(G.ind[x[0]] - G.cfg.pressure, 0, 100); }); }
+    if (!first) G.budget += G.cfg.income;
+    if (checkOver()) return;
+    G.i++;
+    if (G.i >= G.queue.length) { endGame("fim"); return; }
+    G.cur = G.queue[G.i]; G.answered = false; G.sel = [];
+    G.order = shuffle(G.cur.opts.map(function (_, idx) { return idx; }));
+    renderStatus(); renderCard(); startTimer();
+  }
+  function checkOver() {
+    for (var k in G.ind) { if (G.ind[k] <= 0) { endGame("crise"); return true; } }
+    return false;
+  }
+
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  function startTimer() {
+    stopTimer();
+    var dur = G.cur.type === "crise" ? G.cfg.ctime : G.cfg.time;
+    G.dur = dur; G.t0 = performance.now();
+    var info = $("tinfo"), bar = $("tbar"), tm = $("timer");
+    if (!dur) { if (tm) tm.style.display = "none"; if (info) info.style.display = "none"; return; }
+    timerId = setInterval(function () {
+      var left = Math.max(0, dur - (performance.now() - G.t0) / 1000);
+      bar.style.width = (left / dur * 100) + "%"; tm.classList.toggle("hot", left <= dur * .3);
+      $("tsec").textContent = Math.ceil(left) + " s";
+      if (left <= 0) { stopTimer(); timeout(); }
+    }, 100);
+  }
+  function remaining() { return G.dur ? Math.max(0, G.dur - (performance.now() - G.t0) / 1000) : 0; }
+
+  function chipsFor(p) {
+    return '<span class="chip ' + p.hl + '">Letramento em saúde: ' + p.hl + '</span><span class="chip ' + p.dl + '">Letramento digital: ' + p.dl + '</span>';
+  }
+  function renderCard() {
+    var c = G.cur, card = $("card"), tag = c.type === "crise" ? '<span class="tag crise">⚡ Crise</span>' : c.type === "lab" ? '<span class="tag lab">🧪 Laboratório</span>' : '<span class="tag">' + STAGES[c.stage].e + " " + STAGES[c.stage].n + "</span>";
+    var h = '<div class="tags">' + tag + (c.ctx ? '<span class="muted">' + c.ctx + "</span>" : "") + "</div><h2>" + c.title + "</h2>";
+    if (c.persona) {
+      var p = c.persona;
+      h += '<div class="persona"><span class="av">' + p.e + '</span><div><div class="nm">' + p.n + ", " + p.age + ' anos</div><div class="nt">' + p.note + '</div><div class="chips">' + chipsFor(p) + "</div></div></div>";
+    }
+    h += '<p class="scn">' + c.text + "</p>";
+    h += '<div class="timer" id="timer"><i id="tbar"></i></div><div class="tinfo" id="tinfo"><span>' + (c.type === "crise" ? "Decisão urgente" : "Tempo para decidir") + '</span><span id="tsec"></span></div>';
+    h += '<div class="opts" id="opts"></div><div class="hintbox" id="hintbox"></div>';
+    h += '<div class="actions" id="acts"></div>';
+    card.innerHTML = h;
+    var box = $("opts");
+    G.order.forEach(function (oi, pos) {
+      var o = c.opts[oi], b = document.createElement("button");
+      b.className = "opt"; b.dataset.oi = oi; b.dataset.pos = pos;
+      b.innerHTML = '<span class="k">' + (pos + 1) + '</span><span class="tx">' + o.t + '</span><span class="cost">' + (o.cost ? "−" + o.cost : "grátis") + "</span>";
+      if (c.multi) b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () { c.multi ? toggleLab(oi) : choose(oi); });
+      box.appendChild(b);
+    });
+    var acts = $("acts");
+    if (c.multi) {
+      var ok = document.createElement("button"); ok.className = "primary"; ok.id = "btnConfirm"; ok.textContent = "Confirmar seleção";
+      ok.addEventListener("click", confirmLab); acts.appendChild(ok);
+      var skip = document.createElement("button"); skip.id = "btnSkip"; skip.textContent = "Não investir agora";
+      skip.addEventListener("click", skipLab); acts.appendChild(skip);
+    }
+    var hb = document.createElement("button"); hb.id = "btnHint";
+    hb.addEventListener("click", useHint); acts.appendChild(hb);
+    var sp = document.createElement("span"); sp.className = "muted"; sp.id = "labInfo"; acts.appendChild(sp);
+    refreshCard();
+  }
+  function selCost() { return G.sel.reduce(function (a, oi) { return a + G.cur.opts[oi].cost; }, 0); }
+  function refreshCard() {
+    if (G.answered) return;
+    var c = G.cur, multi = !!c.multi, tot = selCost();
+    document.querySelectorAll("#opts .opt").forEach(function (b) {
+      var oi = +b.dataset.oi, o = c.opts[oi], on = G.sel.indexOf(oi) >= 0;
+      if (multi) {
+        b.setAttribute("aria-pressed", String(on));
+        b.disabled = !on && (G.sel.length >= c.multi || tot + o.cost > G.budget);
+      } else b.disabled = o.cost > G.budget;
+    });
+    if (multi) {
+      $("labInfo").textContent = G.sel.length + " de " + c.multi + " · custo " + tot + " de " + G.budget;
+      $("btnConfirm").disabled = G.sel.length === 0;
+    }
+    var hb = $("btnHint");
+    hb.textContent = G.cfg.hintCost ? "💡 Dica baseada em evidência (−" + G.cfg.hintCost + " · restam " + G.hints + ")" : "💡 Dica baseada em evidência";
+    hb.disabled = G.hints <= 0 || G.budget < G.cfg.hintCost || $("hintbox").classList.contains("show");
+  }
+  function useHint() {
+    if (G.answered || G.hints <= 0 || G.budget < G.cfg.hintCost) return;
+    G.hints--; G.budget -= G.cfg.hintCost;
+    var hbx = $("hintbox"); hbx.textContent = G.cur.hint; hbx.classList.add("show");
+    renderStatus(); refreshCard();
+  }
+  function toggleLab(oi) {
+    if (G.answered) return;
+    var i = G.sel.indexOf(oi); if (i >= 0) G.sel.splice(i, 1); else G.sel.push(oi);
+    refreshCard();
+  }
+
+  /* ---------- Resolução ---------- */
+  function choose(oi) {
+    if (G.answered) return;
+    var o = G.cur.opts[oi];
+    if (o.cost > G.budget) return;
+    var best = bestOf(G.cur);
+    resolve({ q: o.q, fx: o.fx, cost: o.cost, fbs: [o.fb], refs: o.refs, label: o.t, best: best });
+  }
+  function bestOf(c) {
+    var top = Math.max.apply(null, c.opts.map(function (o) { return o.q; }));
+    return c.opts.filter(function (o) { return o.q === top; }).map(function (o) { return o.t; });
+  }
+  function confirmLab() {
+    if (G.answered || !G.sel.length) return;
+    var c = G.cur, fx = { E: 0, L: 0, S: 0, Q: 0 }, qs = 0, fbs = [], refs = [], labels = [];
+    G.sel.forEach(function (oi) {
+      var o = c.opts[oi]; qs += o.q;
+      ["E", "L", "S", "Q"].forEach(function (k) { fx[k] += o.fx[k] || 0; });
+      fbs.push("• " + o.t + ": " + o.fb); labels.push(o.t);
+      o.refs.forEach(function (r) { if (refs.indexOf(r) < 0) refs.push(r); });
+    });
+    var q = Math.round(qs / G.sel.length);
+    var bestSet = c.opts.filter(function (o) { return o.q === 3; }).map(function (o) { return o.t; });
+    resolve({ q: q, fx: fx, cost: selCost(), fbs: fbs, refs: refs, label: labels.join("; "), best: bestSet, multiBest: true, qraw: qs / G.sel.length });
+  }
+  function skipLab() {
+    if (G.answered) return;
+    resolve({ q: 0, fx: { E: -2, S: -2 }, cost: 0, fbs: ["Sem investimento nesta rodada, a lacuna permanece e o custo de oportunidade aparece nos indicadores."], refs: [], label: "Não investir agora", best: bestOf(G.cur), multiBest: true });
+  }
+  function timeout() {
+    if (G.answered) return;
+    resolve({ q: 0, fx: { E: -6, S: -6, Q: -3 }, cost: 0, fbs: ["Tempo esgotado. Não decidir também é uma decisão e, em crise ou na rotina, o custo recai sobre o paciente."], refs: [], label: "Sem decisão (tempo esgotado)", best: bestOf(G.cur), timeout: true });
+  }
+
+  function resolve(res) {
+    stopTimer(); G.answered = true;
+    var c = G.cur, deltas = {};
+    G.budget = Math.max(0, G.budget - res.cost);
+    ["E", "L", "S", "Q"].forEach(function (k) {
+      var old = G.ind[k]; G.ind[k] = clamp(old + (res.fx[k] || 0), 0, 100); deltas[k] = Math.round(G.ind[k] - old);
+    });
+    var base = [0, 25, 60, 100][res.q], mult = 1 + Math.min(G.streak, 5) * .1;
+    var bonus = (G.dur && res.q >= 2 && !res.timeout) ? Math.round(30 * remaining() / G.dur) : 0;
+    var pts = Math.round(base * mult) + bonus;
+    G.score += pts;
+    if (res.q >= 2) G.streak++; else G.streak = 0;
+    var qv = res.qraw != null ? res.qraw : res.q;
+    c.comp.forEach(function (k) { G.comp[k].got += qv / 3; G.comp[k].max += 1; });
+    G.review.push({ stage: c.stage, type: c.type, title: c.title, chosen: res.label, q: res.q, best: res.best, multi: !!res.multiBest, timeout: !!res.timeout });
+    renderStatus(deltas);
+    showFeedback(res, pts, mult, bonus, deltas);
+  }
+
+  var QTXT = ["Decisão de risco", "Efeito limitado", "Boa direção", "Excelente decisão"];
+  function refBtns(refs) {
+    if (!refs || !refs.length) return "";
+    return '<div class="refs">Evidências: ' + refs.map(function (r) { return '<button data-ref="' + r + '">fonte ' + r + "</button>"; }).join("") + "</div>";
+  }
+  function showFeedback(res, pts, mult, bonus, d) {
+    var last = G.i >= G.queue.length - 1;
+    var fx = IND.map(function (x) {
+      var v = d[x[0]], cls = v > 0 ? "up" : v < 0 ? "down" : "zero";
+      return '<span class="fxc ' + cls + '">' + x[1] + " " + (v > 0 ? "+" : "") + v + "</span>";
+    }).join("");
+    var h = '<div class="fb q' + res.q + '" aria-live="polite"><div class="fbh"><b>' + QTXT[res.q] + '</b><span class="pts">+' + pts + " pts" + (mult > 1 ? " (×" + mult.toFixed(1).replace(".", ",") + ")" : "") + (bonus ? " · bônus de tempo +" + bonus : "") + "</span></div>";
+    h += '<div class="fx">' + fx + (res.cost ? '<span class="fxc zero">Orçamento −' + res.cost + "</span>" : "") + "</div>";
+    h += "<p><b>Sua decisão:</b> " + res.label + "</p>";
+    res.fbs.forEach(function (t) { h += "<p>" + t + "</p>"; });
+    if (res.q < 3) {
+      h += '<p class="best"><b>Melhor caminho:</b> ' + res.best.join(res.multiBest ? "; " : " ") + "</p>";
+    }
+    h += refBtns(res.refs);
+    h += '<button class="primary" id="btnNext">' + (last ? "Ver resultado final" : "Próxima decisão") + "</button></div>";
+    $("card").innerHTML = '<div class="tags"><span class="tag">' + (G.cur.type === "crise" ? "⚡ Crise" : G.cur.type === "lab" ? "🧪 Laboratório" : STAGES[G.cur.stage].e + " " + STAGES[G.cur.stage].n) + "</span></div><h2>" + G.cur.title + "</h2>" + h;
+    $("btnNext").addEventListener("click", function () { if (last) endGame("fim"); else nextRound(false); });
+    $("btnNext").focus();
+    document.querySelectorAll("#card [data-ref]").forEach(function (b) { b.addEventListener("click", function () { openEv(+b.dataset.ref); }); });
+  }
+
+  /* ---------- Fim de jogo ---------- */
+  function endGame(reason) {
+    stopTimer(); G.over = true;
+    var n = G.review.length, sumq = G.review.reduce(function (a, r) { return a + r.q; }, 0), pct = n ? Math.round(sumq / (3 * n) * 100) : 0;
+    var title;
+    if (reason === "crise") title = "Jornada interrompida: indicador crítico";
+    else title = pct >= 85 ? "Líder de Experiência do Paciente" : pct >= 70 ? "Líder de Inovação em formação" : pct >= 50 ? "Em desenvolvimento" : "Precisa revisar a jornada";
+    var bestKey = "jpx-best-" + G.mode.k, prev = +(lsGet(bestKey) || 0), rec = G.score > prev;
+    if (rec) lsSet(bestKey, String(G.score));
+    var h = '<div class="grade"><div class="ttl" id="endTitle">' + title + '</div><div class="big">' + G.score + ' pts</div><div class="muted">Aproveitamento das decisões: ' + pct + "%" + (rec ? " · novo recorde neste modo" : prev ? " · recorde: " + prev : "") + "</div></div>";
+    if (reason === "crise") h += '<p class="muted" style="text-align:center">Um dos indicadores chegou a zero. Em uma instituição real, isso exigiria intervenção imediata da liderança.</p>';
+    h += "<h3>Indicadores finais</h3>";
+    h += IND.map(function (x) { var v = Math.round(G.ind[x[0]]); return '<div class="comp"><span>' + x[1] + '</span><div class="bar"><i style="width:' + v + '%;background:var(' + x[2] + ')"></i></div><b>' + v + "</b></div>"; }).join("");
+    h += "<h3>Competências</h3>";
+    var weak = [];
+    Object.keys(COMPS).forEach(function (k) {
+      var cc = G.comp[k], v = cc.max ? Math.round(cc.got / cc.max * 100) : null;
+      if (v != null) weak.push([k, v]);
+      h += '<div class="comp"><span>' + COMPS[k] + '</span><div class="bar"><i style="width:' + (v || 0) + '%"></i></div><b>' + (v != null ? v + "%" : "—") + "</b></div>";
+    });
+    weak.sort(function (a, b) { return a[1] - b[1]; });
+    var attn = weak.filter(function (w) { return w[1] < 85; }).slice(0, 2);
+    h += "<h3>Pontos de atenção</h3>";
+    h += attn.length ? attn.map(function (w) { return "<p><b>" + COMPS[w[0]] + ":</b> " + TIPS[w[0]] + "</p>"; }).join("") : "<p>Sem lacunas relevantes nesta partida. Teste o modo Desafio.</p>";
+    h += "<h3>Revisão das decisões</h3><div class=\"rev\">" + G.review.map(function (r, i) {
+      return '<div class="e' + r.q + '"><b>' + (i + 1) + ". " + r.title + "</b><small>Você: " + r.chosen + "</small>" + (r.q < 3 ? "<small>Melhor: " + r.best.join(r.multi ? "; " : " ") + "</small>" : "") + "</div>";
+    }).join("") + "</div>";
+    h += '<div class="actions"><button class="primary" id="btnAgain">Jogar de novo</button><button id="btnEv2">Ver evidências</button></div>';
+    h += '<p class="note">Simulação educativa com cenários fictícios e valores didáticos. Use as fontes para aprofundar e adaptar ao seu contexto.</p>' + creditsHtml();
+    $("endBox").innerHTML = h; $("ovEnd").classList.add("show");
+    $("btnAgain").addEventListener("click", function () { $("ovEnd").classList.remove("show"); openMenu(); });
+    $("btnEv2").addEventListener("click", function () { openEv(); });
+    $("btnAgain").focus();
+  }
+
+  /* ---------- Evidências ---------- */
+  function buildRefs() {
+    var box = $("refList"); box.innerHTML = "";
+    Object.keys(REFS).forEach(function (k) {
+      var r = REFS[k], d = document.createElement("div"); d.className = "refitem"; d.id = "ref-" + k;
+      var link = r.d ? ' <a href="https://doi.org/' + r.d + '" target="_blank" rel="noopener">doi:' + r.d + "</a>" : (r.u ? ' <a href="' + r.u + '" target="_blank" rel="noopener">link oficial</a>' : "");
+      d.innerHTML = '<span class="n">' + k + ".</span>" + r.c + link + '<span class="what">' + r.n + "</span>";
+      box.appendChild(d);
+    });
+  }
+  function openEv(id) {
+    document.querySelectorAll(".refitem.hl").forEach(function (x) { x.classList.remove("hl"); });
+    $("ovEv").classList.add("show");
+    if (id) { var el = $("ref-" + id); if (el) { el.classList.add("hl"); setTimeout(function () { el.scrollIntoView({ block: "center" }); }, 50); } }
+  }
+
+  /* ---------- Menu e controles ---------- */
+  function buildModes() {
+    var box = $("modes"); box.innerHTML = "";
+    MODES.forEach(function (m) {
+      var b = document.createElement("button"); b.className = "mode"; b.setAttribute("aria-pressed", String(m.k === modeSel));
+      b.innerHTML = "<b>" + m.n + "</b><small>" + m.d + "</small>";
+      b.addEventListener("click", function () { modeSel = m.k; buildModes(); });
+      box.appendChild(b);
+    });
+  }
+  function openMenu() { stopTimer(); buildModes(); $("ovMenu").classList.add("show"); }
+  $("btnStart").addEventListener("click", startGame);
+  $("btnMenu").addEventListener("click", openMenu);
+  $("btnEv").addEventListener("click", function () { openEv(); });
+  $("btnEvClose").addEventListener("click", function () { $("ovEv").classList.remove("show"); });
+  $("btnTheme").addEventListener("click", function () {
+    var root = document.documentElement;
+    var dark = root.getAttribute("data-theme") === "dark" || (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    root.setAttribute("data-theme", dark ? "light" : "dark");
+  });
+  document.addEventListener("keydown", function (e) {
+    if (!G || G.over || $("ovMenu").classList.contains("show") || $("ovEv").classList.contains("show")) return;
+    if (G.answered) { if (e.key === "Enter" && document.activeElement && document.activeElement.id !== "btnNext") { var nb = $("btnNext"); if (nb) nb.click(); } return; }
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4) { var btn = document.querySelector('#opts .opt[data-pos="' + (n - 1) + '"]'); if (btn && !btn.disabled) btn.click(); }
+  });
+
+  /* ---------- Logo e créditos ---------- */
+  /* Para incluir o logo: cole aqui a imagem em base64, ex.: "data:image/png;base64,...." */
+  var LOGO_SRC = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhMYEw8QFh8XGBsbHR0dERYgIh8cIhocHRz/2wBDAQUFBQcGBw0HBw0cEhASHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz/wAARCADBAggDASIAAhEBAxEB/8QAHQAAAgIDAQEBAAAAAAAAAAAAAAIBBwMGCAUECf/EAFAQAAEDAwMCAwUFAwcJBQcFAAEAAgMEBREGByESMRNBUQgUImFxMkKBkaEVI7EWJFJTYnKCFzNzg5KissHRGDRDY+ElRUaEo7PSk8LT4vD/xAAbAQEBAAMBAQEAAAAAAAAAAAAAAQIDBAUGB//EADERAAICAQMDAwMDAwQDAAAAAAABAgMRBBIhBTFBEyJRMmFxFIGhI0KxFTNSkQYkwf/aAAwDAQACEQMRAD8A4fQhC9I4gQhCmQCEIQAhCEAIQmwgAKQMIAUqhgpBUKR2QhHcp2tx3UNbxymRAEDlGC7ssgVAob6pkd1ICAjCkDnupQO6AnChMgN9VAQPRSW5TYQqCAMealCMFACEYPqjB9UAKOc/JT0n1TDhQCdJypx8k2UZTAF4UdKYhQmARhHSfVTglHT81QKUuFkIUAKZAuFB4TEHKggFVAhQQmIUIwLhCZRhQCkZKUtwnwQhAYu6MLIRwkQuROkhQsndI5uEBCjspQoBfJLhPjgqEAqFLlCAEIQqAKAhCgBCEKgEIQgBCEIAQhCgBCEIAQOUKQqCQmxhKpCgJQjCMZVAYzwnAAHZDW4UoQEYymDcjupAwFQAGOAp80YymCAgDClCkD5ICEwA9FICnp+aAjp5Uoa0+ZTYwowKmAwhCAjAypUgKcYVAqnClGCUAuPmpx81OFICAXCMJ8KCEGPkQt+ZR0FMhAKAQj6r7rVaq++3Gnt1spJ6yvqXdENPA3qfI70AV+6K9kTU98ZHV6gq4LTSO58KIiaYj6/YH5n6Lm1Osp08c2ywbq6J28QRzpkY74XvO0NqGPT1RqCa01NPaIA0moqG+GH9Tg0Bgdy7JPkMLtux7L6J2xpn10dDFNU07ep9bW/vZG48xngfgAqU391a686WeXZZHVV0UMMbj2YwPeSfUk9P04Xj19cjfdGqmPD8s7X0511udjObz2Spu6jC+hPLDHChSeyhCikYQmwoIKAg8pUyMKAVK4JyoQGPzQeQnIykxhCmMjBx6oTkJOyAFGFKFAKUp4TkKMZVAqEIQAhGMo7KAEIQqAQhCAEIQgBCEIAQhCxAJlACnuqAUgYQAmHdUE/dQ1uAj5JkICkNyoAynAwgADCkclCkBUABhShGEALIOBhJ5r77ZaK+9VLaa20VRWVDjgR08Zef07LGUlFZkVJvhHxqQFbtk9mbce9wtmFogo43djWVAYfyAK9k+yNuJg+ELPK8fcZVkk/7q5Xr9Mnjejb+mt/4lFIVk6g2C3D0w1z6zTlTLGzu6jcJsfgOf0VdzwTUcphqYZKeUd45mljh+BwVvrurs+mSZg65rujGAE2F990sdzsboG3O3VVE6oYJIhUROZ4jD95ue4+i+HC2Jp9jW8rhkYUoyFt9g2s1pqm2x3Ky6auFfQSuc1k8DAWuLTggc+RGElJR5k8GSi5PCNQQrAOx247c50Xdxjv+6HH6rGdldwx30fdh/qh/1WHrV/8AIenNeDQ+fRAyt8Gy24bjxo67n/VD/qsg2Q3GP/wZeP8A9If9U9WHyNk/g0AjKCOFvM+zW4FM3qk0deWj5QZ/gStaumm7zY8/tO0XCiA4JqaZ8Y/MjCsbYfI2S8nl5UHkKcZGRyPUIHp5ra+2TFZGpLnU2mpZU0jyyZnmO+Pw5/JfpPsZHqubQNHXavk6J52eJHFKMSMjxx4jv6WAST8xnlc++yl7PTtW1sGs9SUxNlpnB9DTvbxUyA8SEebQe3qeewV170bgOmqH6UsDnPja7w6uWH77v6luPL+kf/VfH9d1ELZquCzjyez02E0uTWNydVxakrvcaB+bbC/PV2E7x97+6PL81zBvxUiB+m7c13Zs9U4f3i1jT+TXfmtlqd2bJb9U/sYSe8Qw/BPWxHIEnmIx2c1vY+ZOSDwAq23ivEN61z0088U8NHSQQMkid1NJ6etxH4v/AEWHSdJOGoW+OFjJ0622DpaizUGfEp6SvUsOmrvqKXwrRa62vfnGKaFz8fUgYH4q0rN7Lu595hbKLBHRxO+9W1DY8/llfWO6EfqZ4Crk+yKYCkroKT2ONyWxdTP2JI7+iysOf+BahfvZx3N06HvqNL1E8beS6kkbN+nB/RYrUVPsyuqS7oqtC+mroqm3zup6ymmpqhv2op4yx4/A8r5srdFprKMHwKRwlWRKQncCEZUJkcZQCpXjsmUZBUKIlcFkIyOEqoEwoIwmclUAJc5TJAqAI5JUJlBQEIQhYgEIQqAQhCoBCEKAEIQgBHdCbsEAKQMIClACB3QmaFQNjlH8UKQEIMBhShSBygAKUIwiAYPmnxwjC9TTNlfqPUVstLCWurJ2RFw+60n4nfgMn8FLJKEXJ+Cxi5NJFq7F7FTbmVP7SurpabTcTunqZ8L6lwPLWnyb6n14HbK6Sud7sO31sltWkKOhttHStxPcTGDg5x8PGXOJ4+Z7eq2ingpNPaOZbLSwU8cUTaaMM46GkYP44B/Fc0b+Vs+n6ClZDkRxxeOG84dI5xYwn1wAfzK+Ht1VvUNRtzheD6SnTw01W7yeRrbe19vrHNJnuFQeQ6umdK7H+jDg1g+RJWpx+0Ld4nNc2z0PR34j6HfgWnIVStDpXOkkJfI89TnE5JPmSszIx6L6CrpFEYe5ZZ5k+oWN+14Oq9uvagFRVQ0ldW1FtLiGhldJ7xSP9AXO5Z9Tx8wul7bcdJavLI73YaMXJp6mNkibIx7u/wAJIOPI+noSvy7kjGCuh/Zv3Fq57hBpivqHyS0g8e3yPPJjZy6HPngZc30HUPRed1DpnoRd2nePk36bVq17LUbf7YE/X+xZHMYCZCGgD7I9B6Dt2XLrQTyurvbHpmR22yVDcYMmR9D0kfxXKELstC9Tokm9MsnJ1BJXGTA8wt60lvjqPQVugtlOyGptsD3vZE7LHM6jk4c3B75K0bHC+eaIOzxwvTuqVscSOSuxweYnd21+/N9vtpo7vRTy1ltkcY5qGud4joXtx1MD+/Ygg+h5XSLdSxXGwwV9tjHXVN7SNz4RH2gR5kFcOeytD7zpm/wgZEdwaQPT9y1draCtgOmYmOHDZpO/4LzFHblfB2OWUn8nMu7PtI3DbbU5s0j66pkkgbUB7agsAy5wxgNOPsqv2+2RcnvHWLmwf2a53/8AGtO9rmMM3ikjAGGUbR/9R6o/wx6K06ONkFNtksvcZYSO0dKe1zDVVMcVReq+lcTge9hk0Z/HpB/RXvZt3LZfI4odR22iqqGoaOmsp2BzC3tkgZDh647eYX5ZS04e0jCuT2fNcVNDqJmla+Z8lvueRTdZyYpwMjH94DpI8+PRS3Typ96eUWFsbPa1hnW28/sxaDv1llvtgmpbDXvb4kcsRHu8+Rnlg4IwCcjGPwwuZdgdh6ndnVznVZB0vbZv53URkllSQf8ANsPoeCT6H5reNQz3rdLVbNstJTyNgGDeri0kspYc8wj0J88dzx2BXVbP2NsdoOisdhp4xUti8Olh7ue/70jz588n1K4tT1H0YOGcN/wjOOm3yTweLvDuTS7c2aHSum2siuLohH+5GPdIsYGAPvkcD0HPouLN1NyP5N0Eun7ZMf5QVbOmsma7PuUbhzED/WOB+I/dBx3JW1bwa9/kfDLL7x73q+5dUjC/4jTA/wDjv/tf0R5d/ILmG1WW5aiu8FFRxy1lzr5uhjeS573Hkk/qSuXpui9X+vb2XJ06i1Ur0odxtP6VumqrtT2uzUU1ZcalwEcULeT88+QHqeAu19tPY6sWi7U3U+6de2aQYkNE1x8IO8mnzkd8v081c3s/7KWPYjRst3u3hS3uSIS1lW9nLB36G+gHYDzKq3erd9r6ar1Bdmk0sB8Oht3VgOe7PQzPqcdTneg48l69lu98cLwccY44Z62qt9rHoS2Nis1NRaatPLKctia+qqAOD0Mxho/QeueFzpqn2k5bnUPfS0lZVk9pblUvkJ/wgho/IqkL9eLhqq7TXW61Bmq5ePRrGjsxo+60DgBfKxmBhbIaHcs2Mxeo28RRbdJ7QNwjkBntdKI88dEXP5hwIVwaC9piIPZFHX1VICPib4jp4m/3o35cB8x1fRciGIFIInQyMlje5kjDlrm8EH6pPp8cZreGIap/3I/S2SbRm79FHQaus9A6SobmG4wtHQ4Hs4PHLfqDj6Hhc670+yZeNCRz3fTLpbrZWAvdAR1Twt9Rj7Y/X6rVdmt1W0bxb7jLinLh4wxxGTx4zR+jh5/VdoaI1rJPiwXF3XE74adz3Zx/5ZPmP6K5qLrITcHw1/JstrTjldmfmIcKCF1R7TGxMdtNTrHTdP0QEl9fSsbw31lA8u/xDz7rljHC9em1WRyjgnHa8CFLhZMJSFsZiLjhLhOggY4UKLhYzweVkSuHBVAh5KQjBWQIKgMaXGEyEAqgqUYCgFQeUEYRgfNUAhCEAIQhUAhCEAIQhTAJHdSeyhvdMQoCQhAUgLIAAn7JQOUyAFkxhI0cp0ICkICYICFLUEc5Td1QBW+7MmMbiWx0gGI4p5Bn1EZ/9VoRXuaKvkWmdXWa6VB/mkM4bUf6JwLH/wC64n8FzauLnRJL4Nunko2xbO7bBVtu8dTE13U6MseB8viH8SFVPtNaPqKzR8N0gjL2UzfClI+6A/raT+bh+Xqt00zNJZrjBVQtM8WCx4b2kYe+D9MEK4xaaLUFskikjbUUNSwtcx7QQ4HuCP8Akvz6uz9Pap/B9TYt0Nvhn5WRtBbx3WdsXyXTu53si3W1TVV00aPe7c4l5oHnEsfyYT3HoD+a51r7XWWmtko6+lmpKuP7cM7Cx7fqCvvtJqqtTDdB/sfL3UzqeGjznQ8L69O3mbSupLTe4MiS31Mc5we7QfiH4tJH4rHgLFJH1NI8iMLonBSi4vya4z2yTR0/7UF5pL3oqwS0lVFUNhcGdTHtdlo6ekjB7dOPxyuYab7IXwtp3sPQHvEX9DqOPyXoU4w1c2i0v6aHpm7U3K57kfSsUjchZQEOb1Bdxzdjq/2Lbf79a9UMxnFWx3/0wuxaO4R2CihpTwXFz8fjhcq+wpDmg1c7GcVDOB69DV6+/wDvXHp25vhtpNVVhvuVFTxEudUydRy7A+4CcfM8eq8aySi5fk9GEXJLBz17VLnV28Ej4sSufRtdiP4sDreew+XKpxsQLewJXfOw+0UWmKGs1tr2SKbVF3Zh3vLh0UrH8eGM8ZPY/kOFVW+Xs8Mts9VftH05dTFxfU21g5YfN0Y//b+S16PqlCs/Tyf7+BfpLGnZE5bNN6r0NN6du9+1NbaHT7HuvEszfAczIMZBz1k+QHcn/qlbTzVE8cEET5J5HBjImDLnOJwAB5nPC7a2D2ppdtLQ683gMbfapgfUSO5FOzuIh+OM+rvourqmtr0lOXy32NOl08rZ/YtTZzay27O6PbTQD3q6z/vq6rP26iZ3J574/gPqVVW/O5UOhwZXtbcdV3J3g0NC34sk8DLe4YCRx5njzONz3H33tOhNNT3GpI94ILKWDPxyOI4/Hz+WFV+xmgKy93up3R14DNf6p38wpJRltG0jIOD2d0kYHkHDPJXyuj0z1Vnr3dv8ns2T9GO2Pc4+1lbr3Ravu1PqZ7n31koNU4u6iXuaHd/oQPljC669ibaenkfUa5ucDXhpMFCHt8s/E/8AEj8h81Q+/FC+5b23inph1T1klMxoHm9zGj/mF+hO29lptGaLs9qpwGQU8DQSPTHJ/IZ/FfTSknXCC4PKivc5M8jezUrZqimsUEhDIgKipDfNx5Y0/Qc/iF+fW/8AqR961mLRE7+ZWVnhlo7GdwBkP1Hwt/wldUag1A+uudxvFUcMe99S4nnpY3LsfTpbhchaS0hddwLjLfJaaeSzSXSGK4VbHNBidUS8Dk8k9R8ikNqlun2RZZccR7mnRQSGAy+G/wAFp6TJ0npB9CfIrMxoIHov0B2D2ys+ktRa80wM3C1RVsbA2uY15cPBB5AGD37ryN/fZb0/Mx9x0dAy13V46/dG8QTnGcY+4T6jjnldFesjLnwaZ0Ndu5wz4WAsb4i8ta1pc532WtGSfoPNWXtntLeNwtRVFveySgo7e/orp5GfFE7OPDAPd/B48sZXfWnNktF7b6aifZrTAa58eX11Q0STPOO/Ue34LO3UxivbyYQpcu/B+WbDU2e5MnEbmTQOPXG5pacebSD8l2NttqAXTSVHL45fPRdMDpM89GOqJ316ctz/AGAtM13swNR2nUGprUa6t1JW6pktkNCwt6H5ceRnnPHqte2Rrqiilu1hrGSRVMTJIXxO7slhd1AH5gdYXnai2M9t0e67nZVFrNcv2OzW3+DUmnopZWseZmGKdjuR1jh2fkcg/ivz+3W0b/IbWVbQRNLbfN/OKTPlG7Pw/wCEgj6YXWeh6+VrrhQ9g9onYM+bTh3+6f0Vbe0vp8VWmbfeunE9FUiNzsd45Bgj/aa0/iumqe2aZpmswaOXwVCFOeF6ZxiIKlyhQIUIUkKEKI4eihMe6VQCuGEqZ3KVUCnuhSeyhQEFQpKhQAhSBkqFQCEIVAIQhACEIQDN7BMoHZSsQSMKUqnHOVQNgKUKW/aCoGAGPmpQOAhQMYBSFATDlUhIQeOylQRlATjIWKZnU3GVl8lBGUBd+x+8kNvEGm9RTiNrcMo6yU4bjsGPJ7EdgTxjg44K6utN/nsz/HpXiSN3L43cteP+vzX5rVMIcPs5C3jRO9uo9Etjopnm5Whvwinmdh8Y9GP5IHyOR9F811Ho3qT9Wnv8Hs6TX4Srt7H6aae3DsF1eynnqm0NY7gRTuAa4/2Xdj+OF9etdo9K7iUBp7zaoKjI+CdrcPbnzDhz+RC4itW5ll1qAy31rWVr+9FVYilJ9G5PS/8AA5+S33Sm6Oq9DTiKlrpTSsPx0VWC9n+yeW/hheKo26eWZZizslBWL2PJ4+5vsUagsgnr9I1gudKMu90qDiVo9A4cH8VzNdbBcrDXS0N2oaihrI/tQ1DCxw+fPcfMcL9P9Be0Jp3VUkNHcwLTcn/CBK8GB7v7Mnl9HL29z9o9L7oWiWlutFF45afCqox0yRu8iCF7um6q4JK15X8nlXaTnCWGfkm+HkJmM6forH3d2kvO09+NFWsM1vlcfdqxo+F49D6O/iq8b6L6GmyFsd8HlHBOEoPEiUKc+SnIGOcLPODAvzYvdKk2t211lWySt98rapsEEQPxk+G3sO+PLPzW+7V6GhoJZtz9xXNbc5B1UNHKP+6NP2QG/wBYR2H3R88kVptDtzQ2uGHWWqmOETXB1toXDLpJPKToPd39EH+8fJejq3WF71bqaC02Wk/at+f8NPQwu6qegbn7cjuxI7kn/wBF8lrbJWWyqofPz8Hv6atQrU5o2HdbdgXKojqL3V+4WnrxSUTR1uI7eI5vn9fwA81sej9y57fFTUd2qBU2yRgNNXsd4nSw9ufvM/ULlTd7S1dpvVdPRXO6SXOvlpGTzzkYa2QkhzWf2RjAJ74WHQuuajSU3ula19VY5XZfAD8ULj9+M+R9R2PmsZdH/wDX3weWix16Vu2SwjtOj0HpmDWLdVU9BCK97Opr2OHgkkZ8UDtnH3vr58rDrXXlAKCaolqvAslA3xHy/wBaR548yTw0fNVzb77PPp5zLdcmv0/UNMvijAjawcuyTywD7zeOVUTqq574a7tmlLIJhYopgXuGfjYD8Urvw4aP+pXn0aW3Uz/qPiPz/g6bLIUxzFdywdEaQuW6N/brvUFO79kQO/8AY9ul5aQDxK4eYyM/M/IK8n6hFtf+zo35fTjwjj70hOXfm44/Bbhqmpsm22kY55GRMfBGIKSnbgeLIGgAAeg4J+Q+a5b1LrV1g07XXqWXNfMXw0Q/rakjl391gJcfn0jzX0SgoxUV+x5cm5PLNPttfHq72jveg8PhN1cWu8i2FmAR/sZXf1bco3WqqihcMtpnhoHf7BC/NjZF3u25djd8Tj++aCTz1GJy7P0dqh9feYaWRxInikbg+vQSP4LbKO23b8JGtPMMml7oUrrdt/qScZa5lBM0H6sLf+aqrY8Cn2r1A1p5/b9pPH+nCvPfSnH+S/UpYOfdHdvwP/JUTss8f5N75H5vvlsP5VDVzaj6H+Ubal7l+Dqfba4Bm5muy44Dq+LHz/cMVmbgVLRcLYPVzVQekrg+n3C1bIAQH3CLn/UMVnbh3gRXK0vc4dOW/wAFdP8A7fJLPrNY0pFFTV2rnxQtYai9Oke4DHU7oi5/JXbqSQM0zAeP80ue7VeI2TXsBwBfdSePP4Ilceqa8v0xStzyYuQPorS81CzmSRQul64ijibntr4n9XLn/bMMl3i1Mw9jdZz/ALUkrD/xBXVZJDBBED56zdIf9oqi9rnh28OpHEkZuD8fU1Dlxx/v/C/ydDzmKOntM2oxXulcG/ba9h+hY5eNvtQsqtrb+w4Lo4fFA7kFpDgf90qyGUgttNLWEf8Ad4HyH1+GMlUBrHVX7Q0jfY5XnHuE5IPb/NkfxK9HOUn+Dkx3OU2nIUrHGc8rMvXzk88VL5lZBykd3VBCVMod6oUjCQjCdK/1UAhCQpycpSgIUFSoI81QQlKZQf4rHAAKD3QhUAhCFQCEIQAgIQOUAyZKmCgBN2SpxySmQMVLe6QA+adoVAykKFIygZKloUA9ymb2Qgyjz+SHefyQOyIBkJsJMZyrS2Ksto1DrGShvNvgrqaSFjGMm5DXueGhw575cAtWovVFbsl2RsqrdklFFXOAII4XyTUgcMqxtzdJxaWu7ooKcQx+K9ha37I82/of0WjlnUMKUWx1Nasj2Zba5VT2S7niyU2M47rdNPbqahsEcVNUytultj4FNWkucxvoyT7TPoDj5LwXwgkjC+eSm6hjCl2mhYsTWTKq+UHmLwXxZNXWvVkD5bXJIyojb1TUU+PFjHm4Y4e35jkeYC6B2S3hultrINN3aofU26o+Cklkd1Ogf5Mz5tPlnsfkuAqV9Ta6yCto5n09VA4PjkYcFpHn/wD7uulLBdo7xZLXfKVjaeSoaXPjZ2inYcPA9BkAj0BXyvU+nqhbodme1pdT6/tl3R1DuvZ6DcLTFwtdZG0yOYXwvPdjx9k58uV+dlTTPoquemlGJYXljvqF3E/VfvkUcjnYe9jXEehLQT/Fca6+ETNa3cRHLXy9Q/Elbf8Axy2UXKp9jT1WqO1TR4Q7qy9utBxVcX8pL6xrbNTEmGCQhoq3t8yT2jae58+y13Sem6WrZJeL9I6m09RO/evHD6h/cQx+pPmfIL5tcbiV+sJBS00fuNlhAZDSR8AMHDQfkB5eX6r3dVZO3+hT+7+Dz9PCEP6tv7IsaW8X/dS+1FJYZnRUcP7uqu72kR07D9yJvqR5dz5kDhdB7daYse32mY6W0wdM1W55qquYh01QWnGXO9PkOB2CoT2fqmOk0zeQeCa5v/2QrjrLk6K323pdwRKcevxrhrojVmEfB02XuxJsrjezZfW2sNYwXKy6cqqmiFK2IytAaC4Pd5HB7EcqtnezXudKegaSqxnzc5oH8VvG4O+V70LqGC2UlI2pY+ljnEj6uZhHUXDGGuxjha272otQStxJaInf/P1H/wCS6KrLVBKK4NVkIOWWz3NI+yzuXUUlRbbjXw2Gx1bmuqY5J+prseZHAH5roTRdh2/2JsstHYXC9agnH76eE9XUccB0nYDvw3P0XI9w9oC9VpJFkt/Uexnmmmx+Bdhaxct2dZXKJ8LLgyggdwY6CIRZH1Hxfqoq7ZN+0u+CXcvLdfXcZuT7pq24iSoa3pprbTOHiNb3DWt/8Merncn0K5w1Bqav1fcxV1gbFBE0R01LFnw6eMchoz585J7k8leV4b6iV0sz3ySvOXPe4kuPzK+2GHB7cLqo07T3T5ZosuysRWDYNA3OOwa20/cJSGww1kfWf7JOD+hXQ1rvztP61ovEfhlLWiN58unq6SfyK5cq4nGM9Bw4ctPoVedPI3U9gtt9jOZKmEQ1IH3ZowGu/MdLvzWrVRcLt3hmdDzDadL7iWR160Pf6Bret01HKxv16SB+q5Z2hrIbXt7dZ6t/hQx3WhlldyelrZWknA58ius9FXxmrNGUdS8g1Phe71LfPxWjHP1GD+K4vu+s7ns/qXUNioKR7T746aKQSdP7twy0due/6Lh1EJWLbDv3OmmcVLdLsW3cddad/btbdLJuC601Na9r5YK62iamc9rekHqy1wyAF7h15dNRspI7u6hn6XAU11tswlo6k+THH7UT/QP4PYElc8P9ojWJOHOjki82TEyAj6OSQbq22vkllrbEy1VsjC19ZZsQl4P9ZEf3cg+RA+oUVN0VhxwZynXLydFC4i1NuVVVOfFEy4kuPQXOcfDiwxrBy55PAaOUmpd3LzXBlLdtSWfR9AwYjonhtZcHN/tsBDIz8j1ELnSm3erZZHm81txrYWOLo4aV4p3yOLQ0udJy4Za1oPT8Xz5OVpN76+yZbYNPWa0x5zmGnBkd8zI74yfqVY02Rjtxkx315znBfundXabn/ZlrtuoJ7tXOuorZZamHwnyOJy4gABuFoOzlmN23juAjBzLdn/hhzjn83BanTe0hqjxWmra6VvniUjI9Oc4V8eyFpua56jrdSVNP0N/eVJHOA+VxIGfkOlc7psg25LGcI3b4SS2vOC7N36oad0FeaoHpfMwU0WfMyEDH+zkrjPVlyEWjL5I8kOnZHSx58y94J/3WuXVntD17bnU2zTtOQRB/O6nB7OIIjB/AuP4hcYbwXBsVZQWGA8U+aqfH9Nwwxp+jcn/EvRS3NQRxt4TkV/CeOTlZs8fNYIQcALOQvWR5/kAoKlvdBCnkoiCpKgqgVQ77KlBGUBixwoTFKgFUHPKlCAQqMeaZB7KAVCEJkAhCFQCEIQAmb3SpmoBkJCeVIPCgGTDslCdvYKgkJ29khTDsCgGTeQSZTBCEp29kiyAYGEAIQlPdEBvIqwNoa42/UVfOw4dFRiYfVk0bv+Sr4nC2/bIudqeojAz4lBOCPp0n/kuPqKUtNNM6NJ/vROhd/dKtv1udcKJoIewSB3p95rv1wfk75LlENkYSyRpa9pILXdwR3C7c0VqOxXSw0VlvlXHSV8LPd81AxFK0cMIf2DsHHOAqq3f2Gr6GofdrLAZoX/EWs5Dh8ivn+i9RjS3Rbwn5PV6hpHZ/Uj3Rz4FHQM8rJNDLSzOhnifFK04LHjDgoaMk54X1qaksp5PCaeex8k8Y6HcLoXY6xyV+g3F7Opvv0xjz2IIYDj8Qqn0hoC96+ukVBaKV8niODXzdJ8OMeZJ7fguqbxDbdqNKUOl7W9st0ZEGEN7tLvtPPoTngea+c69qYbFRF5bZ6/S6p7nY1wa7cKuKlkq3xyDwaZpy4njpYMZ/RcrXCu9+1FW1UvU+My4IBwSB358vNWNuLuA2itz7LRuDqyUjx5GO+zg/Y/A8n5jHkVsns++zf/lYoX11xvf7MpHhzoWxsDpZQCQXc54yCPwK0dLgtLF3XPGeDdrp+q1XBZwVDeb5VagfAyXENDTN6Kelj4jib6Aep8yeSeV8PhNDSAMZVmbvbQS7V3NkMdyZcaGV5jbMG9LmuAz0kdu3mq1OQDwSvo9LKuytSq7HjXxmpYn3La2kPuumrk4Z+K4D/wC0Fa7Jpay2W44OGiUf7603ZTStbcdGz1Jp3CKasdIwuH2gGhuR8uCrQ0vRUtf7xbYZWvnoXngEfGCeSPUA8Lz5P3S/J1rskc1b2sA1nQZH/u6Ef7zlX/gg9lcHtGabq7Vqu01b4XNpp6TwWvxx1NcTj8nAqq4osN5C7dFh1pHNqH78nwmIDuo8AOKtTaPaSfdbUD6Ftwit9BThpqaqQZ6eo4a1o9Tz34GFv2+fsxs2otf7Vtd7fcaWENNRDPGGyRtLukPBHBGe4W12QU9nkwUJNbkc4Mp/iz6L64osDKzBg8hwmwulRwam2+588kYLPmtj221iywXOazXGTotFycD4hHFPMPsv+nkfkfkF4Lxkd15tbTh7HEZB7gjyXPqKfUizbTY4Sydl7a3F2lb4+lqXBltri1spHLY3/dePlzjPoQVrXtVbXGaODVtDF1Pgb4dWGf0PJ34d/oSqk263dbRU8Nj1C79zGAymrHZPQPJj/Vvoe4+YXSen9bxT0Is98Intc0fTHUH4gGEcZPOW+h8l5CcoSw+Gv5O5pOPHZnCzqcHtjHyWJ1MuhN0PZ7uVhfJdtNw+/wBkm/eCKH4nwg8/Dj7Tfpz9VSEkDo3mORpa9pwWkYIXqVTjYsr/AKOOSlB4Z5Hu49PxUinBK9TwB2816li0pdNSVbKa2UclRI44Ja3LW/UrKWyHM3hGK3S4ij49KaUl1Peqagiic8OcDIAPu5/59l+mWh9N0m0O2zJaho96mAe5gGC95HwMH8fkqe2m2ptOz1qj1Fq2WOKreeuOncAZJHfJvmPl+fCxbl79UfSbveX+FTMBbRUTSHOcfkPvOPmfsj19fIsn6tm/HC7HoQhtht+TwdytWxaXoLhqC7SNlrql5cIweZHu7MHy8vkB8lx1U3KovVfVXGtk8SqqZDK93zPp8h2+gV56S0Ff/ad1W2quF0itVqaf3bT8Xgxk44zgFziOSe+PQL7t8fZjj2hp31NsvjrnDA0OnjmY1sjWnA6m9PkCRwfJbtPOMZc9zVfFtYRQjW8DCcd0AeSjK9Vo4SRwVBKg8qQMlCilQpd3KhQEHuoUnulcmAKe5SJvMqCgEQg9yEIBVB7FSUp5TABCEIAQhCoBCEIATN7filTN7fioAI5UtAwjhSOygBZAcrGnb2CoJKdoxj6JCnHYICUw7JVkB4CAgDkLIUg7plQCgjKlCEJAyD9V7ekL/T6Yv8VwqmSug8KWJwiaHO+NuMgEjPOPNeGCQfkklb1jB7LC2pW1uMuzMoTcJKS8G43Td55rSKS3Rz0pJyZS5ryPwOAfwW7aL9od9lDadlZX0UB+1TVMQqqY/LHcD6BUVJTDqGAo92H9FeZLpOnktu0746+xPcddu3T281dGP2zaNO1cp7yNqRC4n16ZBkfmvMluO1FDIZ4NM20lvI67pCW5+nUf4LljwckZ7BSKZvGWhaF0dx4hY8GT18X3gjqis9ougtVGaG1T26z0gHSGWqIzTEenWQAPwwqc1Lu/VXITwWmGSES5ElXO7qmkz358s/L8yq7FKwYwE7YseS2U9GqrlvfL+5jPqM2tsVhGGOB0sjpJHl0ju5crf283RorDbKW23OsqaN1EHsilhLgHscS7GW8ggk9+CFWEUOR2RPSh47DC7r9DC+vZLsjmq1EqpbkWBrzcim1XHSWyiklmp4ZXTPnkBHW88cA8+Q5Xs6Mv+3Fjs9NLfrbFW3hj3F7ajxiwDPw/CwFp4VSQ04hOWjBWd8XWDwsatBGupVQbWDKeq3Wb5LJ0jePaOsVyt0dtprhDa7cxvT7tQUEkbS30LsF36rwLXu3pK3VMNRDeZ4Z4jlskdNKHN/RUDNSN9F83uufu/mFh+jxwpMK9Ndjre6+0hoy/Wr9m3yOgu9IRyJ7fK1+fUFvb8lUOt7toa6x0j9I0jqSYSHxouqVzenHH+cAxz6Kqo6UZGWr1KOMRuyAtlOlcJKW4xsuUo7cFh7ca6pNH3Sqp7o+dlruAj65YQS6J7CcE45IIcQfTjgrdt2949PX21T2rT1fW1zq1jIpHTF/RCwEE8u7k9IHHblUfUsEzTx5L4GUoieDhbZ6RSs35Ncbmo7cHrsOQpWOLhqyLtyzQQ7ssL29Qws57c9ljxlCni1lG1w7cr3tLbjX3R8fu0bm1dvByaWcZaPoe4PzC+WRnV5L4J6XJ7ZXLfp42fUjbC1x4Rfek/aSprW3w4p6u2Ndy+mqI/eaU+vbkfktpqNwtv9ZuDr3Y9OVkh/8AGp64U7z9WyDI/NcnupQXcgKPd2+gXG9E/Ejp/UJrlHVgj2ft72zDT9GXD4gJr1Tlv8T/AAX3Te0Zp3TMHu9hisFpDBhslIx9dOPQt+EMafouRPdWZ+yOUGmYDwFFopZ90h+pS7ItvVu/NZeKqaoo4aiqrZODcLq7rcP7sQ+EfLJI+SqO51dde6x9bcauaqqZO8krsnHoPQfIcJzEMjACdsP1XRDTqJqldKRv+1m5lJpLqornLUQU0oa10kAOWFpOD9MOIP5qwd3N59K3+wPtWnG1FVW1jBHPVy9XSxnGQC45cTjC54npgSTj6lRBD0nsFpjolGe7Jseobjhnot7ZRhRHx9Ey9BHIRhSoOVKgQrxyEp5CZ55CVCikcoQe6FAIe5SkJj9opSUAh+0UI80IBAMFBHBUoKAQDAUoQgBCEKgEIQgBM3hKmCAPNSAfVQQUw7KZAJ29ki9vTmlL1qqeSG0W+WqdHgyOBDWs+rjwFjKyMFuk8IsYuTwjyE47BbDqPQeotJwtmu1skgpyenx2ObIwH0LgeD9VrjTnCV2RsW6DyiyhKDxJYHTt7LbLHtdq3UdtguVts0tRRT5McgkYA7BIPBdnuCvl1BoLUulIGz3ez1NLTvOBMcOZn06mkgfita1NTlsUlky9KeM4NeHdMlz+a2rS23GqNaQvqLNapJ6ZhLTO97Y48juA5xGT9FnOyFa3TeEYRi5/Ssmr91BOF72p9G3zRtVHTXu3S0kko6oy4hzHjzw4EgrwSsoTjNbovKJKLi8SXIA5Q4EpmMdI9jGDLnENA9STgKxDsPuMzg6XqD/rov8A81jZfXVjfJLJlCuU/pWSuRHnup8IFbJqXRGoNEyUrL/bH0L6trnQte9juoNIz9kntkLwVuhKM4qUXlGEk4vDPn8H5I8I8cL6QMcKcK4RjyfN4R9FlbBlZQMpxgK7S5IazGExAORhb9pnaS9ar0NfNYUVRQstdm8T3hksjhKehocekAYPDh5rzNAaAu25GpI7JZ/CjmMbppZ5yRFBG0ZLnkdh2H4rT+pqxJ5+nuZenLKWO5qQiBT9Ab2W57jbbXbbK5UFLcp6Wsp7hTippa2jcXQzN8+kkDkcfmFqDSDytldkLY74cokoODwz5/CBPLSgUoPkvqAwU3ZZtImT5RSgHssrIuk8KZJRGxz3dgCfyVg6/wBo79tvbbJX3eWhkhvLS+nFNKXOADWu+LIGOHhYSshCSjJ8sqjJpyXg0Po4OFhMfPI7rPgjjsgkDkraYiMbhOjpJxjJzxwrKi9n3cqazturNK1furo/Ea10kYlLcZz4Zd1dvLGVqtvrq+uWDKMJS+lZKyJzx5KDwncxzHuY9pa9pIc0jBBHcEeRWIkk8LYmmTHgDysTxhWVbthtxbvbKO5UWmZ5qGsibNDK2aIdbHDIdgu4Wuas2+1Pod0I1DZKy3tm/wA2+VoLH/IObkZ+WcrnhqqZy2KSz+TKVU4rLXBqT4QfJYjB8l9mUrvkt7Sa4MV9j4vC+Snw/kvqxkrYNGaFvGv73+yrLCx84YZpJJHdMcUYIBc4+mSB88rCbjXFym8JGUYuTwjVRECeyfw8Lb9f6DuG3F5htV0qKSeolgFQHUzi5oaXEYOQMHI/VamVKpxsjvj2Ek4PbLuYHRZzlII+kdl9PGCUhVaMcoUDACjKlL3UwUnKlQEEqIqTFdyfooUlLlQEHuhGUKgQ9ylKknJRxkqZBj9UIQhRAclQVJCjCEBCEIAQhCoBCEKMAmHklTDsgGQlyfRSCmASugtHwVzdi6t2nC/9rySSue6A4lyHgOAPr0Dj6rn1bTpDWt+0RK6otxJopiDLTzsd4Mvzz5H5hcPUKJXVpR7p5x8nVpbFCbz5RsVj3XkpdK3rTmoaeuuhqg6OOSSQdUOW4w7q+Lh2HD0wVXELSGjnJ7LotkGmt69LXCviovcNR0TDmTjqDukluXD7bHYI55C50jJJHHdYaCVcnPatsvKM9UpJRecr5OhKa611n9nKhqqGrnpKpkga2aF3S4A1DgeV9uz2pLjrnSerrRqSqkuFLDCA2aowXAOY/LSfPBaHD0X06bulmtewNtrL3bP2nboyQ+lGMvJncGnnjg8qvb7vFSnT1TYtI6eZY6WqBbNL1Dr6Tw7pDeMkcZJJwvKrqla51whzv7/B1ylGG2UpeOxWVHSmtqIKdhPXO9sTSPVxAH8V0FvrfK7b+3aY0tp2smt1O2Fz3vpndDy1hDWjI5GT1E+qoWwzCmvdqmLgGRVcDyfIASN/6K6vahhI1LYajuySjkaHeWRJ/wD2Xo6pb9VVXLtz/By0vbTOa+x6zbhV7n+z1cam6vNTdrI+Rzah32nGLpdkn1LHEH1wudccldDbW9NH7Putp5Bhr31WM+f7pjf4lc8t7fNZdN9s7a12Uv8A4Y6vmMJfKPooSG1tLn+uZ/xBdNe0vrfUWm7/AGCCx3uut8U1HI+RlNJ0h7hJgE8d8Fcx0bc1tMM95Wf8QXX29G8Vy2xvFqoqGz26vbWU75nOqy4Fpa/pwOnyWnqCb1VW2O54fBlpUvRm3LBzfba647lans1s1Rqms6Znmnhqqv8AfCAv7ZGRwXAAnK96+bMXa0bmUOio5hM+uDXw1giIb4WPjeW5+5h2efIeq8Tcjcyt3KuVDX1Vto7dLRwmFooi7By7q6ufMH+C7G0hV19226s2r6u0sl1bT2eU05fgOkJGR9A/oY7Hz+amr1VuljCUUknxj4fyWmmF7km848nKNx2lqTuW3Q1iuLLpWMYHVNU6Pwo6fjLurk/ZBbn5nCsF3s02+4NuFvsWuaOv1Jb2ZnoDE1oDv6Jw4luTxyPqs/smSvuut9W3O4OMlxfSNe58g+IvfNl5/MKkLbq+9aP1bcb3ZLi6jucks7HzFrX5D3kkEOyO4Cvq6q6yVUJ8wSf5b7k20wgpSj3bNl2z2ku+5d+q7ZTSR0UFAOquqqhpLafkjpwO7iQQB8iey3XUXs6Uo0vcb/ozWNFqWO1BxrIIGt6mhoy7pLXHJAycHuOy3PYF1JXbQ7kXO9XKSjbcauc19wiYC+Jhhb1PDQP/ADHcY819O0eoNmdq3Xj3HcGaujukDIZY6mkc1oDc8jpZycOxytF3UL3bLa3mLSwlw/nk2Q09agm/P3PM2em6PZh3P6Dk/wA6II/0DFpuxGkNW3+z6krKPU7NLaTki93ude9jSZgBksBPYAO5OQB1eq3vaGCN3sy7nhgw3qqw3Hp4LMfovZsFj01N7KNkpNS3yWyWWumElRWQReI4yGoeQwtwcgloHbyWizUSh6qX90ku2fHwZRgpbX8I0DdfbO+WXbGz11n1qzVe31ul6YGtaz+ZucekOaRn4cnpPPHGQsemPZufqHbqy6ydqmht1FWgy1XvkfRHSRBzml5f1cn4RgYHJWyxat2s0fszrDRlj1xJd5bnFNLBHU0z2EyuDQGjDABywHPqo1TNJ/2MNNRdRxLUwscPIjx5Tj8wPyW2GqvUY1QePdjOMZRg6a3JzfPGTUNy9g2aO0TFq+wakp7/AGTqa2aSJgHSHHpD2lpIc3q4PmMr59sNiX640xVasvl/pdO6Ygc5gq6huTIQcEjJAa0HjJPJ7KwNNUo/7FGpvMNnm6R6fzmMrHu8P2X7K22dJTH+bTyUpkDfvHwpH5/2uVnHW6hL0N3Lk1nBPRrzvS4xnBXe7uxE+3FjodQ0N7pr9pmvIZHWQNwWuLSW5wSC1wBwR5jC+zfXRGpNG2XRc951rX6jguMTnUtNUB380HhxnDck9w5o4x2Vc124+pKnQTNESXRv8mYD4kdF4LMtIcXgh+Or7RJ7rpD2q7bNV6b2lgpQ99XKzohbH9pzzFD04+ecLonZfVbVC1p8vn9jVFQnCUomq0Ps32u1Ulmi1tr63WC93loNNb+gOdk4+EucRk8gHHGeMqst1NsrntVqY2a4zR1DXxienqYgQ2aMkjOD2IIII+St7Ve09j0/U2at3h3ZuEmp5mMMNHDF7w+NgcD09RBJb1cF2AM5wm9tGbq1XpLAzm2y8+o8Xha9HrbXqYQctylnxhfsZXUx9JyxjBSG2dTR024mlH3Hw/cBc6fxfE+z0+IO/wAs4XXt7oNe1HtS0FXFNcWaUioxM8+IRS+CGOD2n7vX4mD6+fYLlzY/bun3R3Ct9irXyR29rHVVUYzhxjZg9IPkXEgZ8l1sNc6e3drdc7TQVVVZqukY6joqmOYh1S2MBr3Dzy1zSC08uZk+oWrrLzf7VnC5+yfkz0aWz3cc8fc423XrKC77navrbQ5slunuEropIh8D+wc4fIuDitOPwgkjjC6d13THYDYyl0YyWnOrdUyvdWywnqEcIOHdJ79PSGsH95y5fe8lh48l6/T7vWq9q9q4T+ceTj1Ffpzw+51puvqq76b9nfbWqsl0rbbUytpo3y0cpjc5vu7jgkdxlYNH6huO5vs1a0ZqyqdWyWzx/ArKgZe4xsEjCXebmuPTnvg4Wz6nv+lNM7B7d1mrNL/yhoZaemjipstHhyeCT1848gQqK3I39gv+ipNHaR0xFpvTsgzMxr2mSQZyWANGACQMnkngL5zT0zugowhypN7vwz0pyjCWZPuuw2g9iG33SbdXaq1JS6b09KcQS1DQXzc46viIABOceZXh7ubQ1W19Nb7pBcoLvp65AmmroRjJ6eoNIBI5HIIODyr73Ns2i6va3be2ar1RU2C2xUsMlN7tB4oneKdgORg4wCT/AIitE3K1dt6/YSn0XpzU/wC2Ky3TxOp/GgcyRzOtxcfsgcBxH0XXR1DUTtU+6baxjhJff5NU9PXFOL44R8cHstXKqmsT6e+wmgrqUVVVUvpy0UoIYWtA6viceo+g+HKsT2b9F2/Tk+oayG/UtbWPe+jkpGACSBsU7mh7viP2sAheF7TdyrKLbPb+1QTSRUlwja+oaxxHiBkEfS047jLicLX/AGRo2Q3vV72AA+4w/wDG5arZai/RStsnx2xj7myEa4XxhFcmlV+z1RfNyxpuw6ipr9JVQmsmuQdmOBpcerrILuQccZyS4LZK/wBm6nmp7hDpzWVFd71bR/OKEMa0h39EkOPSc8DPGeF6HspARTa6rY2j3qKnjaw45xmR38Wj8lqPs0VU3+VuncXuzV0dV4xPn8PVz/i5W6V98d6hLCrS/cwVdftclne3+xru2e2Uu49deqUV/wCz5rVCJHNdD4hc4uLSzGRggtK9m8bJVOnaTSoulyZFcr7Xso308cfUKUOGck5y4jz8lcW0tBBSbx7stpgGxRyhwaOwJkc4/qSuctO19Vetz7TcK6eWeqqLxE9z5HF3eXsM9gO2FtjqtRfbNqWIxSf8ZI6aoRimuW8Foy+zfR0F1FFc9Z0VMKnDaJpYGzVDvMBhd5HjzyvMPs8OtVwfDf8AVFBQQSy+FROAHiVXA7NcR098Y55WbfrqZvTZT1H91FRdPyzMScKPadqnP3AsTf6uka5o9D47s/wH5LRVfqp+n7/qWey4M5V0pSe3s0iu9d6BrtE6mgsjpW1bqtrXUsrB0+KHO6cYPYhwwVvjNirfTSUduuusKOlvtY3MdGyMOyfQZIJ5yPnjhe17QtnrrlrrRdLai/8Aac8LmU5Yektf4owQfLHf8F81Toiw6e1dZn6q13VV2qmywPbE2LrJIcOhpOCQ0nzOO6zlrbJ0Qlvw2m+FlvAVEVZJY4yis6vbust+4VLpCtqWRy1EzI21MbS5pY8Za8D8O3ktxn2LpbddjQXHVdLA+cgUjPDAln45PQXcc8fNe3r6VzvaA0y48ECm/i9axuq98+9VEHOPwSUDW/IZaf4kotVfdtxLGY5ZHTVBSbWeUjR9T6Nr9Nan/YTgKmplLPd3RjiYPOG4HkcgjHyViUmxtJ1QW+v1ZSU1+nZ1spGMDgfpkgkd+QPLhbfq2gp5t/NKtkAwKVzx/eHikKo907jVW/dW7V1LKYqmimjdBJjPT0sbjv8AUrZXqb9TtrjLDxkk6a6cyksrODyToG8u1m/SrYmm5Nk6XPJ/dhmM+Jn+j08rdajZije+pt9v1VS1V8pmdT6UsAAPp3y38e3nhfXsveq7VOvbrdbrUCorW0DWB7Wtbx1tHYcdlm03Lt3pvVcl+bq+qlreuUyRTU5DSX56gSG57n9FLtXfGbjnmK8LuZVaevbu8N+Sk54JaWeWCdhjnheY3sd3a4HBH6FY1sevq2hums71XW2VstDUT+JE9rSA4Foyeee+VrhP5r2KpOUFJ92ebOKjJpdhUIUea2GIFQjzQgBCEKgFOOFCFACns3KjGU3kgAIzhSOyMoCQro0hq7TmpdvW6K1JcW22anP7iqfw1wDuphBPAIyQQfIqlx2CjpGVz6jTq6KTbWOeDbVa63nGS+7dc9IbT6cvAtmoIr7e7izoYynA6WnBDc4yABkk5OfktPsjtIf5Krr74+2jU7TL7uJP8/8Aab04/VVs0ADACkMwcrRHQpZbk2208/g2vVNvtwXDPquzHYeCxsulMbuJBmj6v3g/fl3bHpyqiIOFDWtznHKYjn5LoooVSkk+7yarbXY034LU3Bl0S/QemP5POtovuIvffdv86P3Xxdf+P9VtztSaQ3f0jaaHUt+jsWoLZwZZsAO+HpJaXcODgAcZBBC59a0BSWNPkueWgTikpNNPKZtWqab44fguzX2tNOWDQUGgtI1/7QjkINXWMPwEdXU74uznOcBnHAA7rzrp/IYbKWxtJJajrLrj8cM/7zjxHdXV/hwqma0DOAgAA5xyrXoYwUVGT4eX9yS1Lk22vGD6qVwjqqZxIDWysc5x8gHDJXUm5TNr9zrjb62v3DpaOSjhdCxlO5pDg53Vk9QXKoPGEZ4wVnqdI75xsjNxa+DCm9VxcWs5LbumjNtLdqTTVNb9cx11tnnc+5TzlrWQRMwcAtHd3IW93vfugj3rsdRQXBh0fQQC3vljyInNkALpcejCGc+jSuaA3Knp4xgrXLpytads28LBnHVOH0LB0JaNd6T2431rrxabtT1ulL7EfeZKPLxSPc7qOW47B7c8fdcSttsdJs/t1qG8az/lfQXplQ2R1LaGNZM5heeogN56j5DqAwDyuUGDGc5TNAa4nBWMulpvib7Yf3MlrMd4ov8A2c3W0/FV6ysOrntoLFquSScSNbiKB7wWuYcD4R0FoBxjLQvTt9PtLs7p++1TNQWvWt6rIvDoabwWS+EcHpyBkN5IJcccDgLnDI7EcFQI2tJLW4z34Vs6YnNyjNpPuvwYx1bS9yyzofavcPTln2C17YLneKOkvVf7z7vRvdiSUuhYG9IxjkghfVtVrjR+qtp6/bHWl5ZZWiV01DXyjEYBeJG/EeA5rs8HGQ71XOAY3k4OVIZnjBWU+mQkpYljLT/BFq2scdlg6L1edrdudr67TdjuVr1bq25vx+1I4WP90aSMkPGQ3DRgNBJJcSVj1NrXTU/ss6b01TXqjl1BTVETpbe158aMCWUkkY8g4Huueg3o7NT9OfJWPTktrlJtp5D1XfC7nQVg1/p6m9lHUOl573RxainmldFbnPImkBnjcCBjzAJ/BezonV2h9zdlqPbrV2o4dPXa0SA0dbVYDJGsc4scCfhyA4tLSQcYIXMRjyclpT9B7FpwsZdLhLPuaec5+GFqZJrjjGDoDeHUGg9O7WWvbzRtwo77XRv8WsvEULScAucR4gHLnOI4aSA1vdbBvvuxpqsptp6uw3eju9Vp+WOpqoKZ+SzobCek8cZLCFy9g4xjhHhkcgHI+Sv+mR9rlNtrP8h6l84Xc653Ofs/ujqC1a/rtxYKSKngj95tDGh1TMI3FwjDD8THc9J4OcZC0v2rNZ6a1tf9L1mm7zSXKGCgljmFO8u8FxkDg13ocfwXPYYA7PT+OFIbjJAI/wCaxo6YqrI2Oedvb7Fs1TnFxx3LH2P3Gp9r9w6C+V0cslsfHJS1YhGXtjeB8YHmWkA49Mq86qk2Vtu4Mm58W4cTme8G4NtFI8F5qDycAfHgk56cAZ7nC5F6Sc5B/JI2ItOQ0/XC2anp6vs9RTccrDx5RjVqHXHDWfg6h3T1toHfXQEN9N0o7BrW1GQRUFfLiSePOTF1AYcHDDmu8nZC5gcSGnBGSOFBYc8g/kjnPZ35LfpNJHTV+lGWV/g122+rLc1ydA7s6909qDYbb6xWy90VVd7eYPeqOJ+ZIemBzT1DywThc+NwQQfskco6QOzSD9EY+qy0mmhpoOC5y8i231Gmzpm3ai0FvHtLp/SuqdSU+m9Q6d6WQ1FVjw5Wtb0AgnAcCwAEZBBblaHvBd9vrLo60aQ0SaK7V9OeutvccLet+A74fEH2iXO8sgADuqgc0O7g4WNzBxwuSHTFGeVN7c5wbnq8xw48l9+0Druwaq0pt/SWe9UlwqaCEtqoqd5c6EmKMfFx6gj8Fj9mjVuntJXbUsuoLxSW2OqpImQuqHEdZDySBx5Kh+lo7fwU5Hn2WS6fH9O9PnhvJh+pl6nq+S1tiNxrftxrCrfdXFtlusRgmla0nwiHZY8gd29wfkVYNgO1e014umraLWUF3lljkbR22nc18kYeclg6eT2AyQAAuaC4eS+fwwHdWO/dYX9NjZJyUms4z98GdercVjGcdi/NhdyLVbtV63vGp7rSW2S8MErTUPIDnmRzi1p88AhU9pa5QUWsLNW1MjIqaG4xSySuPwsYJAS4n0xyvGdG12MjkJOkei2Q0cYObT+pYMJahy258Fwbw6msuot1LddbZc6art0cdIJKiFxLGlshLvyHKj2gdSWPUet7VWWS6U1wpYaRrJJoHZax3iuOD+BBVQhuG48lHSPLssIaCEXBp/Smv+yvUye77l+bl7n2V24+ir9a6+C5Udra73n3U9RaHPwR274OfwWbUB24uetabW8+s4ZAJIpXW+IBzpJGABpx3aOASCOMHlc+AD5pPDb5LUulwikoSawsfsbVrG220XdrPVFgrN6NOXemvFLPbIBB49UxxMbC0vzk4+Y/NavuRqG23TdaG6W+ugqbc2SiJqIzlo6C3q5+WD+SrksUdHGFsr0EYbfc+Fgwepk858vJbu4+vaBu6Nh1DZ62K4U9DE3r8B2Q4db+pufXpd+oW017Nt9RaopdZy6rpI2NDJZ6GbAMj2D4epp5B7ZGD2XPBYGt+Sx9AJz5rD/ToqMVGTTSx+xmtY8vcsluUO6NopN2Ki+w0pgsM8XuX7qMNIjGMSdI/tDOPQr0WWbbey3yt1FJqWiuVDJ4ksdtDQ8hzuSMdz54yBjPKpMgcY8knSO/mspdPWcwk1xh/ci1bxykz7btWR3G6VtXDTR0sNRK57IIxhsbc8NA+QXxHupSjJ7rvitqUV4OVvLyBHOEqbCU91SAhCEQBCEKgEIQgJClCFiwSFB7hCFUCR2ClCEYGHkmQhQEt7p0IRAFIQhZAYKUIUQZITDshCpBgnZ2KEIgZGph3QhUDO7j6LK3uhCxZST3Cys7oQgGPcpj5IQqVEjyWQIQsTN9hh3Uu+2EIURiOkchCIqIZ5pShCofcR3dPL2CEIQwO7pHfZQhQCjskk8kIWSIY/VQ7sUIVKI3zWOVCFGYsxjzS+aEKmLJ8ik80IQIXzKhCEKiCoQhRlFf9kpAhCgIKVCFQChvZCFQBSHuhCxAIQhVAEIQqD//2Q==";
+  function creditsHtml() {
+    return '<div class="credits">' + (LOGO_SRC ? '<img src="' + LOGO_SRC + '" alt="Logo">' : "") +
+      '<div><b>Concepção e conteúdo: Sueli Pessoa de Oliveira</b><small>S.P.O. Excelência & Performance</small><small>Enfermeira · Master Black Belt em gestão de processos de saúde</small>' +
+      '<small>Desenvolvido com apoio de IA (Claude, Anthropic). Evidências: PubMed e legislação oficial.</small></div></div>';
+  }
+  if (LOGO_SRC) { var lt = $("logoTop"); lt.src = LOGO_SRC; lt.hidden = false; }
+  $("footCredits").innerHTML = creditsHtml();
+  $("menuCredits").innerHTML = creditsHtml();
+
+  buildRefs(); buildModes();
+})();
+</script>
+</body>
+</html>
